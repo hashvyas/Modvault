@@ -7,14 +7,10 @@
 --   Indexes are maintained separately from schema.sql so that they can be
 --   added, dropped, or rebuilt independently of the table definitions.
 --
---   Required by the project rubric:
---     * CREATE INDEX (B-Tree, default)
---     * CREATE INDEX USING GIN  (for JSONB and full-text search columns)
---     * CREATE INDEX USING ivfflat / hnsw  (pgvector ANN search)
---     * CREATE UNIQUE INDEX  (enforces business-rule uniqueness on expressions)
---     * CONCURRENTLY option  (shown in comments; safe for production)
---     * Composite (multi-column) indexes
---     * Partial indexes (WHERE clause)
+--   This file demonstrates:
+--     * CREATE INDEX using PostgreSQL's default B-tree indexes
+--     * Supplementary indexes on frequently queried foreign-key columns
+--     * Indexes designed around expected ModVault query patterns
 --
 -- NOTES
 --   * Primary key indexes are created automatically by PostgreSQL when the
