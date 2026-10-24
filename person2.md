@@ -137,6 +137,8 @@ modvault/
   docs/screenshots/                # P2
   .github/workflows/db.yml         # P1
   .github/workflows/app.yml        # P2
+  docs/handoff/person1.md          # P1
+  docs/handoff/person2.md          # P2
 ```
 
 Build order inside `run_all.sql`:
