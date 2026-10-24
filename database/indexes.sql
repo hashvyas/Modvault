@@ -21,12 +21,14 @@
 --   * Index names follow the convention:  idx_<table>_<column(s)>
 --
 -- DEPENDENCY
---   Run AFTER schema.sql (and optionally ddl_demo.sql for new columns).
+--   Included by database/run_all.sql, after schema.sql.
 --
 -- HOW TO RUN
---   psql -d modvault -f database/schema.sql
---   psql -d modvault -f database/indexes.sql
+--   Do not run this file alone. It is included by database/run_all.sql.
+--   Rebuild everything with:  python scripts/db_reset.py
 -- =============================================================================
+
+SET client_encoding = 'UTF8';
 
 
 -- =============================================================================

@@ -25,14 +25,14 @@
 --   feature it demonstrates and why that feature matters for ModVault.
 --
 -- DEPENDENCY
---   Requires schema.sql + seed.sql to have meaningful data.
---   Some transactions also require ddl_demo.sql (extra columns).
+--   Run AFTER database/run_all.sql has built and seeded the database.
 --
 -- HOW TO RUN
---   psql -d modvault -f database/schema.sql
---   psql -d modvault -f database/seed.sql
---   psql -d modvault -f database/transactions.sql
+--   python scripts/db_reset.py
+--   psql "postgresql://modvault_owner:modvault_owner_dev@localhost:5432/modvault" -v ON_ERROR_STOP=1 -f database/transactions.sql
 -- =============================================================================
+
+SET client_encoding = 'UTF8';
 
 
 -- =============================================================================

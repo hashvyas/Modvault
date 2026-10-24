@@ -6,14 +6,20 @@
 -- No sample data, triggers, stored procedures, or indexes are included here.
 -- Tables are created in foreign-key dependency order so every referenced
 -- table already exists when a referencing table is created.
+--
+-- HOW TO RUN
+--   Do not run this file alone. It is included by database/run_all.sql.
+--   Rebuild everything with:  python scripts/db_reset.py
 -- =============================================================================
+
+SET client_encoding = 'UTF8';
 
 
 -- =============================================================================
 -- SECTION 0 -- EXTENSIONS
 -- =============================================================================
 
--- pgvector is required for the mods.embedding VECTOR(1536) column.
+-- pgvector is required for the mods.embedding VECTOR(384) column.
 CREATE EXTENSION IF NOT EXISTS vector;
 
 -- pgcrypto provides gen_random_uuid() on PostgreSQL < 13.
@@ -111,7 +117,9 @@ CREATE TABLE users (
     email         VARCHAR(255)    NOT NULL,
     password_hash TEXT            NOT NULL,
     role          user_role_enum  NOT NULL DEFAULT 'modder',
+    is_active     BOOLEAN         NOT NULL DEFAULT TRUE,   -- inactive users cannot log in
     created_at    TIMESTAMPTZ     NOT NULL DEFAULT NOW(),
+    updated_at    TIMESTAMPTZ     NOT NULL DEFAULT NOW(),
 
     -- Usernames and e-mail addresses must be unique across the platform.
     CONSTRAINT uq_users_username UNIQUE (username),
@@ -125,12 +133,15 @@ CREATE TABLE users (
 CREATE TABLE games (
     game_id        UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
     name           VARCHAR(255) NOT NULL,
-    domain         VARCHAR(100),             -- Nexus Mods URL domain (e.g. "skyrimspecialedition")
-    nexus_game_id  VARCHAR(100),             -- External identifier; nullable - may not be on Nexus
-    created_at     TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    domain          VARCHAR(100),            -- Nexus Mods URL domain (e.g. "skyrimspecialedition")
+    nexus_game_id   VARCHAR(100),            -- External identifier; nullable - may not be on Nexus
+    current_version VARCHAR(50),             -- Latest game version, e.g. "1.6.1170"
+    created_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
 
     -- A game name should be unique on the platform.
-    CONSTRAINT uq_games_name UNIQUE (name)
+    CONSTRAINT uq_games_name   UNIQUE (name),
+    -- Loadout manifests resolve the game by domain, so it must be unique.
+    CONSTRAINT uq_games_domain UNIQUE (domain)
 );
 
 -- -----------------------------------------------------------------------------
@@ -154,21 +165,42 @@ CREATE TABLE tags (
 -- -----------------------------------------------------------------------------
 -- mods
 -- A mod record represents a single modification authored for a specific game.
--- embedding stores a 1536-dimensional pgvector embedding of the mod summary,
--- enabling semantic / similarity search.
+-- embedding stores a 384-dimensional pgvector embedding of the mod summary
+-- (Xenova/all-MiniLM-L6-v2), enabling semantic / similarity search.
+-- search_tsv is a generated full-text vector used by keyword search.
+-- author_id is NULL for mods imported from Nexus; nexus_author keeps the
+-- original author name.
 -- -----------------------------------------------------------------------------
 CREATE TABLE mods (
-    mod_id        UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
-    author_id     UUID         NOT NULL
-                      REFERENCES users(user_id) ON DELETE RESTRICT,
-    game_id       UUID         NOT NULL
-                      REFERENCES games(game_id) ON DELETE RESTRICT,
-    nexus_mod_id  VARCHAR(100),             -- Nullable: mod may originate outside Nexus
-    name          VARCHAR(255) NOT NULL,
-    summary       TEXT,                     -- Human-readable description; used for embedding
-    category      VARCHAR(100),             -- e.g. "Weapons", "Quests", "Textures"
-    embedding     VECTOR(1536),             -- pgvector semantic embedding (nullable until generated)
-    created_at    TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+    mod_id            UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
+    author_id         UUID
+                          REFERENCES users(user_id) ON DELETE SET NULL,
+    nexus_author      VARCHAR(255),         -- Original Nexus author name
+    game_id           UUID         NOT NULL
+                          REFERENCES games(game_id) ON DELETE RESTRICT,
+    nexus_mod_id      VARCHAR(100),         -- Nullable: mod may originate outside Nexus
+    name              VARCHAR(255) NOT NULL,
+    summary           TEXT,                 -- Human-readable description; used for embedding
+    category          VARCHAR(100),         -- e.g. "Weapons", "Quests", "Textures"
+    download_count    INTEGER      NOT NULL DEFAULT 0,
+    endorsement_count INTEGER      NOT NULL DEFAULT 0,
+    is_featured       BOOLEAN      NOT NULL DEFAULT FALSE,
+    rating_avg        NUMERIC(3,2) NOT NULL DEFAULT 0,   -- maintained by trigger
+    rating_count      INTEGER      NOT NULL DEFAULT 0,   -- maintained by trigger
+    search_tsv        TSVECTOR GENERATED ALWAYS AS (
+                          setweight(to_tsvector('english', coalesce(name, '')), 'A') ||
+                          setweight(to_tsvector('english', coalesce(category, '')), 'B') ||
+                          setweight(to_tsvector('english', coalesce(summary, '')), 'C')
+                      ) STORED,
+    embedding         VECTOR(384),          -- pgvector semantic embedding (nullable until generated)
+    created_at        TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    updated_at        TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT chk_mods_download_count    CHECK (download_count >= 0),
+    CONSTRAINT chk_mods_endorsement_count CHECK (endorsement_count >= 0),
+
+    -- A Nexus mod id is unique within its game.
+    CONSTRAINT uq_mods_game_nexus_mod UNIQUE (game_id, nexus_mod_id)
 );
 
 -- -----------------------------------------------------------------------------
@@ -183,10 +215,13 @@ CREATE TABLE loadouts (
     game_id              UUID         NOT NULL
                              REFERENCES games(game_id) ON DELETE RESTRICT,
     name                 VARCHAR(255) NOT NULL,
+    description          TEXT,
+    game_version         VARCHAR(50),         -- NULL means "not set"
     is_public            BOOLEAN      NOT NULL DEFAULT FALSE,
     nexus_collection_id  VARCHAR(100),        -- Nullable: not all loadouts are Nexus Collections
     nexus_revision_id    VARCHAR(100),        -- Nullable: only set when synced to Nexus
-    created_at           TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+    created_at           TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    updated_at           TIMESTAMPTZ  NOT NULL DEFAULT NOW()
 );
 
 
@@ -206,6 +241,7 @@ CREATE TABLE mod_versions (
     semver           VARCHAR(20)  NOT NULL,   -- e.g. "1.4.2"
     nexus_version_id VARCHAR(100),            -- Nullable: Nexus file ID
     changelog        TEXT,                    -- Release notes (optional)
+    supported_game_versions TEXT[]  NOT NULL DEFAULT '{}',  -- empty means "any game version"
     is_primary       BOOLEAN      NOT NULL DEFAULT FALSE,
     uploaded_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
 
@@ -313,9 +349,9 @@ CREATE TABLE loadout_mods (
 --
 -- ASSUMPTION: UUID values have no semantic ordering, so enforcing
 --             version_a_id < version_b_id via CHECK is not meaningful.
---             Instead, the application layer (or a future trigger) must
---             canonicalise pair order (e.g. always store lower UUID as A)
---             so that (A,B) and (B,A) are not stored as separate rows.
+--             Instead, trigger trg_compat_canonicalise_pair canonicalises
+--             pair order (always store lower UUID as A) so that (A,B) and
+--             (B,A) are not stored as separate rows.
 --             The UNIQUE constraint on (version_a_id, version_b_id) prevents
 --             exact duplicates of the same ordered pair.
 --
@@ -337,8 +373,34 @@ CREATE TABLE compatibility_matrix (
     CONSTRAINT chk_compat_no_self_compare
         CHECK (version_a_id <> version_b_id),
 
-    -- Prevent duplicate (A,B) pairs. Pair canonicalisation must be enforced
-    -- by the application or a trigger (to be added in a later phase).
+    -- Prevent duplicate (A,B) pairs. Pair order is canonicalised by
+    -- trg_compat_canonicalise_pair.
     CONSTRAINT uq_compat_version_pair
         UNIQUE (version_a_id, version_b_id)
+);
+
+
+-- =============================================================================
+-- SECTION 6 -- AUDIT LOG
+-- =============================================================================
+
+-- -----------------------------------------------------------------------------
+-- audit_log
+-- Append-only history written by trigger function fn_audit_log() on every
+-- INSERT / UPDATE / DELETE of audited tables. trg_audit_log_immutable blocks
+-- UPDATE and DELETE. old_row / new_row omit password_hash, embedding and
+-- search_tsv. changed_by is the app session user (app.user_id).
+-- -----------------------------------------------------------------------------
+CREATE TABLE audit_log (
+    audit_id    BIGINT      GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    table_name  TEXT        NOT NULL,
+    operation   CHAR(1)     NOT NULL,
+    row_pk      UUID,
+    old_row     JSONB,                       -- NULL for INSERT
+    new_row     JSONB,                       -- NULL for DELETE
+    changed_by  UUID
+                    REFERENCES users(user_id) ON DELETE SET NULL,
+    changed_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT chk_audit_log_operation CHECK (operation IN ('I', 'U', 'D'))
 );

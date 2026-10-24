@@ -22,13 +22,14 @@
 --   demonstrates.
 --
 -- DEPENDENCY
---   Requires schema.sql (and seed.sql for meaningful results).
+--   Run AFTER database/run_all.sql has built and seeded the database.
 --
 -- HOW TO RUN
---   psql -d modvault -f database/schema.sql
---   psql -d modvault -f database/seed.sql
---   psql -d modvault -f database/queries.sql
+--   python scripts/db_reset.py
+--   psql "postgresql://modvault_owner:modvault_owner_dev@localhost:5432/modvault" -v ON_ERROR_STOP=1 -f database/queries.sql
 -- =============================================================================
+
+SET client_encoding = 'UTF8';
 
 
 -- =============================================================================
@@ -54,7 +55,7 @@
 -- 2.3  List mods filtered by tag name (join through mod_tags)
 -- 2.4  Top-10 highest-rated mods for a game (ORDER BY + LIMIT)
 -- 2.5  Full-text search on mod name and summary using tsvector/tsquery
--- 2.6  Find featured mods (uses is_featured column added in ddl_demo.sql)
+-- 2.6  Find featured mods (uses mods.is_featured)
 -- 2.7  List mods with no reviews yet (LEFT JOIN ... WHERE IS NULL)
 -- 2.8  Mod catalogue with pagination: page N, M results per page
 --        (OFFSET / LIMIT pattern)
@@ -118,7 +119,7 @@
 -- 6.2  Top modders by mod count and average mod rating
 --        (multi-level aggregation with CTE)
 -- 6.3  Game with the most mods (subquery in FROM clause)
--- 6.4  Download count leaderboard (uses download_count added in ddl_demo.sql)
+-- 6.4  Download count leaderboard (uses mods.download_count)
 -- 6.5  Window function: running total of mods uploaded per game
 --        (SUM OVER (PARTITION BY game_id ORDER BY created_at))
 -- 6.6  Window function: percentile rank of mods by average rating
