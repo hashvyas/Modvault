@@ -13,12 +13,14 @@
 --       dropping and recreating the full schema.
 --
 -- DEPENDENCY
---   Run AFTER schema.sql has been applied.
+--   Run AFTER database/run_all.sql has built and seeded the database.
 --
 -- HOW TO RUN
---   psql -d modvault -f database/schema.sql
---   psql -d modvault -f database/ddl_demo.sql
+--   python scripts/db_reset.py
+--   psql "postgresql://modvault_owner:modvault_owner_dev@localhost:5432/modvault" -v ON_ERROR_STOP=1 -f database/ddl_demo.sql
 -- =============================================================================
+
+SET client_encoding = 'UTF8';
 
 
 -- =============================================================================

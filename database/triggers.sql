@@ -20,14 +20,14 @@
 --     * Triggers that log audit events
 --
 -- DEPENDENCY
---   Run AFTER schema.sql AND functions.sql (trigger functions must exist
---   before the trigger itself can be created).
+--   Included by database/run_all.sql, after functions.sql.
 --
 -- HOW TO RUN
---   psql -d modvault -f database/schema.sql
---   psql -d modvault -f database/functions.sql
---   psql -d modvault -f database/triggers.sql
+--   Do not run this file alone. It is included by database/run_all.sql.
+--   Rebuild everything with:  python scripts/db_reset.py
 -- =============================================================================
+
+SET client_encoding = 'UTF8';
 
 
 -- =============================================================================
@@ -108,7 +108,7 @@
 --
 -- Purpose:
 --   Automatically sets an updated_at column to NOW() on every UPDATE.
---   (The updated_at column is added to mods in ddl_demo.sql.)
+--   (The updated_at column is defined on mods in schema.sql.)
 --   The same generic function is reused for any other table that gains
 --   an updated_at column.
 -- =============================================================================

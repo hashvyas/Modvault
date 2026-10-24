@@ -15,17 +15,22 @@
 --     * Column aliasing for readable output
 --
 -- VIEWS DEFINED
---   1. mod_catalog_view     -- mod listing with game name and author username
---   2. mod_ratings_view     -- per-mod review count and average rating
---   3. loadout_summary_view -- per-loadout mod count with owner and game name
+--   1. mod_catalog_view          -- mod listing with game name and author name
+--   2. mod_ratings_view          -- per-mod review count and average rating
+--   3. loadout_summary_view      -- per-loadout mod count with owner and game name
+--   4. loadout_health_view       -- per-loadout issue counts, score, status
+--   5. mod_conflict_summary_view -- per-mod conflict and dependent counts
+--   6. mv_game_leaderboard       -- materialized top mods per game (Bayesian score)
 --
 -- DEPENDENCY
---   Run AFTER schema.sql has been applied.
+--   Run AFTER schema.sql and functions.sql have been applied.
 --
 -- HOW TO RUN
---   psql -d modvault -f database/schema.sql
---   psql -d modvault -f database/views.sql
+--   Do not run this file alone. It is included by database/run_all.sql.
+--   Rebuild everything with:  python scripts/db_reset.py
 -- =============================================================================
+
+SET client_encoding = 'UTF8';
 
 
 -- =============================================================================
@@ -39,15 +44,19 @@
 --
 -- Tables joined:
 --   mods  INNER JOIN  games  ON mods.game_id   = games.game_id
---   mods  INNER JOIN  users  ON mods.author_id = users.user_id
+--   mods  LEFT JOIN   users  ON mods.author_id = users.user_id
+--   (LEFT JOIN because author_id is NULL for mods imported from Nexus.)
 --
 -- Columns:
 --   mod_id         -- unique identifier of the mod (from mods)
 --   mod_name       -- display name of the mod
 --   game_name      -- title of the game this mod targets
---   author_username -- username of the mod's author
+--   author_name    -- platform username, else the original Nexus author name
 --   category       -- mod category (e.g. "Weapons", "Quests"); nullable
 --   created_at     -- timestamp when the mod was first published
+--
+-- ASSUMPTION: author_name replaces the old author_username column rather than
+--             sitting beside it, so callers have one author field to read.
 --
 -- Typical use:
 --   SELECT * FROM mod_catalog_view WHERE game_name = 'Skyrim Special Edition';
@@ -58,12 +67,12 @@ SELECT
     m.mod_id,
     m.name          AS mod_name,
     g.name          AS game_name,
-    u.username      AS author_username,
+    coalesce(u.username, m.nexus_author) AS author_name,
     m.category,
     m.created_at
 FROM mods m
 INNER JOIN games g ON m.game_id   = g.game_id
-INNER JOIN users u ON m.author_id = u.user_id;
+LEFT  JOIN users u ON m.author_id = u.user_id;
 
 
 -- =============================================================================
@@ -143,3 +152,68 @@ GROUP BY
     l.name,
     u.username,
     g.name;
+
+
+-- =============================================================================
+-- VIEW 4: loadout_health_view  (Phase 0 stub, filled in Phase 3)
+--
+-- Columns: loadout_id, error_count, warning_count, info_count, score, status
+-- Will call fn_check_loadout_compatibility for every loadout via LATERAL.
+-- status is 'broken', 'warnings' or 'healthy'.
+-- ASSUMPTION: counts are bigint (what COUNT(*) produces) and score is int
+--             (matches fn_loadout_health_score).
+-- =============================================================================
+
+CREATE OR REPLACE VIEW loadout_health_view AS
+SELECT
+    NULL::uuid   AS loadout_id,
+    NULL::bigint AS error_count,
+    NULL::bigint AS warning_count,
+    NULL::bigint AS info_count,
+    NULL::int    AS score,
+    NULL::text   AS status
+WHERE false;
+
+
+-- =============================================================================
+-- VIEW 5: mod_conflict_summary_view  (Phase 0 stub, filled in Phase 3)
+--
+-- Columns: mod_id, mod_name, incompatible_pairs, partial_pairs,
+--          declared_conflicts, dependent_mods
+-- ASSUMPTION: counts are bigint (what COUNT(*) produces).
+-- =============================================================================
+
+CREATE OR REPLACE VIEW mod_conflict_summary_view AS
+SELECT
+    NULL::uuid   AS mod_id,
+    NULL::text   AS mod_name,
+    NULL::bigint AS incompatible_pairs,
+    NULL::bigint AS partial_pairs,
+    NULL::bigint AS declared_conflicts,
+    NULL::bigint AS dependent_mods
+WHERE false;
+
+
+-- =============================================================================
+-- VIEW 6: mv_game_leaderboard  (materialized; Phase 0 stub, filled in Phase 3)
+--
+-- Columns: game_id, mod_id, mod_name, rating_count, rating_avg, bayes_score,
+--          download_count, rank_in_game
+-- The unique index allows REFRESH MATERIALIZED VIEW CONCURRENTLY.
+-- ASSUMPTION: types follow the mods columns (int, numeric) and RANK() (bigint).
+-- =============================================================================
+
+CREATE MATERIALIZED VIEW mv_game_leaderboard AS
+SELECT
+    NULL::uuid    AS game_id,
+    NULL::uuid    AS mod_id,
+    NULL::text    AS mod_name,
+    NULL::int     AS rating_count,
+    NULL::numeric AS rating_avg,
+    NULL::numeric AS bayes_score,
+    NULL::int     AS download_count,
+    NULL::bigint  AS rank_in_game
+WHERE false;
+
+CREATE UNIQUE INDEX uq_mv_game_leaderboard_game_mod
+    ON mv_game_leaderboard (game_id, mod_id);

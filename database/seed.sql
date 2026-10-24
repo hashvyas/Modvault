@@ -3,8 +3,12 @@
 -- Seed / Sample Data  --  seed.sql
 --
 -- PURPOSE
---   This file populates the database with realistic sample data for
---   development, testing, and demonstration purposes.
+--   This file populates the database with seed data for development,
+--   testing, and demonstration purposes.
+--
+--   GENERATED FILE -- never hand-edit. It is produced by the Person 2 data
+--   scripts (scripts/nexus/) from data/curated/. Until then (Phase 0) it is a
+--   comment-only placeholder.
 --
 --   It demonstrates core DML operations:
 --     * INSERT INTO ... VALUES (...)          -- single-row inserts
@@ -30,17 +34,21 @@
 --
 -- NOTES
 --   * UUIDs are declared as variables so cross-row FK references stay readable.
+--   * Mods and mod versions come from the Nexus Mods API (v1). All other rows
+--     (users, tags, dependencies, reviews, loadouts, compatibility matrix)
+--     are curated by hand in data/curated/.
 --   * No pgvector embeddings are inserted here; the embedding column is left
---     NULL and will be populated by an application-layer embedding job.
---   * All data is fictional and for demonstration only.
+--     NULL and is filled by scripts/embed.ts.
 --
 -- DEPENDENCY
---   Run AFTER schema.sql (and optionally ddl_demo.sql) have been applied.
+--   Included by database/run_all.sql, after rls.sql.
 --
 -- HOW TO RUN
---   psql -d modvault -f database/schema.sql
---   psql -d modvault -f database/seed.sql
+--   Do not run this file alone. It is included by database/run_all.sql.
+--   Rebuild everything with:  python scripts/db_reset.py
 -- =============================================================================
+
+SET client_encoding = 'UTF8';
 
 
 -- =============================================================================
