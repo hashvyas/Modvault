@@ -16,8 +16,9 @@ You are the coding agent for Person 1. Your branch is `p1-database`. Person 2 wo
 7. Never change a signature in the contract (section 6). Function bodies change. Names, arguments, return columns and types do not.
 8. Never invent Nexus mod IDs, API fields or library APIs. If unsure, check the official docs or ask the human.
 9. When a task is ambiguous, pick the option closest to this spec, write the assumption in a code comment starting with `-- ASSUMPTION:` or `// ASSUMPTION:`, and list it in the phase summary.
-10. Stop and ask the human before: deleting files you do not own, changing `schema.sql` after Phase 0, using any paid service, or committing secrets.
+10. Stop and ask the human before: deleting files you do not own, changing `schema.sql` after Phase 0, using any paid service, or committing secrets
 11. Every command runs in PowerShell on Windows 11 from the repo root.
+12. Keep a handoff log at `docs/handoff/person<N>.md`. This file belongs to you only, so it never causes a merge conflict. At the end of every phase, before the phase summary, append one entry with these parts, in plain language a student can follow without reading the code. Header: phase number, phase title, date. What was built: each file created or changed, with one or two sentences on what it does. How it works: the logic of the main functions, triggers, pages or scripts, step by step, with the SQL or code concept each one demonstrates (for example recursive CTE, row-level trigger, savepoint, RLS policy). Decisions: every choice made during the phase, the reason for it, and the alternatives rejected and why. Assumptions: every `ASSUMPTION:` comment written in this phase, with its location. Checks: the "Done when" and exit check commands run, and a short summary of their output. Open issues: anything unfinished, fragile or worth revisiting. For the other person: anything the other person needs to know or wait for, such as a new function, a changed behavior or a sync point. Never rewrite or delete earlier entries. If a later phase reverses an earlier decision, add a new entry stating the change and the reason.
 
 
 ## 1. Project summary
