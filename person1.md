@@ -382,7 +382,7 @@ Import rules: `format` must match, else `INVALID_MANIFEST`. The new loadout belo
 
 | Phase | Title | Tasks |
 |---|---|---|
-| 0 | Shared foundation | T0-01, T0-02, T0-03, T0-04 |
+| 0 | Shared foundation (DONE 2026-10-24) | T0-01, T0-02, T0-03, T0-04 |
 | 1 | Indexes and triggers | P1-01, P1-02 |
 | 2 | Core SQL logic | P1-03, P1-04, P1-05, P1-06 |
 | 3 | Procedures, views and security | P1-07, P1-08, P1-09 |
@@ -390,7 +390,9 @@ Import rules: `format` must match, else `INVALID_MANIFEST`. The new loadout belo
 | 5 | Tests, CI and benchmarks | P1-11, P1-12 |
 | 6 | Final merge | together |
 
-### Phase 0: Shared foundation
+### Phase 0: Shared foundation (DONE 2026-10-24)
+
+Status: complete. All tasks and exit checks passed. Do not redo this phase. Details are in `docs/handoff/person1.md`.
 
 Goal: Create the skeleton, final schema, contract stubs and run order on `main`, so both people branch from the same base.
 
