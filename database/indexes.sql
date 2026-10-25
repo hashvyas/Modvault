@@ -52,6 +52,15 @@ CREATE INDEX idx_mods_game_id
 CREATE INDEX idx_mods_author_id
     ON mods (author_id);
 
+-- HNSW approximate nearest-neighbour index for semantic search
+-- (embedding <=> query, cosine distance).
+CREATE INDEX idx_mods_embedding_hnsw
+    ON mods USING hnsw (embedding vector_cosine_ops);
+
+-- GIN index for full-text keyword search (search_tsv @@ tsquery).
+CREATE INDEX idx_mods_search_tsv
+    ON mods USING gin (search_tsv);
+
 
 -- =============================================================================
 -- SECTION 3 -- INDEXES ON: mod_versions
@@ -63,6 +72,16 @@ CREATE INDEX idx_mods_author_id
 CREATE INDEX idx_mod_versions_mod_id
     ON mod_versions (mod_id);
 
+-- GIN index for array containment on supported game versions
+-- (supported_game_versions @> ARRAY['1.6.1170']).
+CREATE INDEX idx_mod_versions_supported
+    ON mod_versions USING gin (supported_game_versions);
+
+-- Partial unique index: at most one primary version per mod. Backstop for
+-- trg_mod_version_single_primary.
+CREATE UNIQUE INDEX uq_mod_versions_one_primary
+    ON mod_versions (mod_id) WHERE is_primary;
+
 
 -- =============================================================================
 -- SECTION 4 -- INDEXES ON: mod_dependencies
@@ -72,6 +91,10 @@ CREATE INDEX idx_mod_versions_mod_id
 -- This is the hot path for dependency-tree traversal and conflict detection.
 CREATE INDEX idx_mod_dependencies_dependent_version
     ON mod_dependencies (dependent_version_id);
+
+-- Speeds up reverse dependency lookups: "which versions depend on mod X?"
+CREATE INDEX idx_mod_dependencies_required_mod
+    ON mod_dependencies (required_mod_id);
 
 
 -- =============================================================================
@@ -126,3 +149,16 @@ CREATE INDEX idx_compatibility_version_a
 -- is covered without a sequential scan.
 CREATE INDEX idx_compatibility_version_b
     ON compatibility_matrix (version_b_id);
+
+
+-- =============================================================================
+-- SECTION 10 -- INDEXES ON: audit_log
+-- =============================================================================
+
+-- Speeds up "recent changes to table X" in the admin audit view.
+CREATE INDEX idx_audit_log_table_time
+    ON audit_log (table_name, changed_at DESC);
+
+-- Speeds up "all changes made by user X".
+CREATE INDEX idx_audit_log_changed_by
+    ON audit_log (changed_by);
