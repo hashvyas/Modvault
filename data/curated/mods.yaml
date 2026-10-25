@@ -158,6 +158,7 @@
 - ref: stardewvalley:3753
   expect_name: Stardew Valley Expanded
   supported_game_versions:
+    "1.15.11": ["1.6.8", "1.6.14"]
     "1.14.46": ["1.6.8", "1.6.14"]
 
 - ref: stardewvalley:1063
