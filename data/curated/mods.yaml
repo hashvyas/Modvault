@@ -1,0 +1,216 @@
+# Skyrim Special Edition (15 mods)
+- ref: skyrimspecialedition:12604
+  expect_name: SkyUI
+  supported_game_versions:
+    "5.2SE": ["1.5.97", "1.6.640", "1.6.1170"]
+
+- ref: skyrimspecialedition:266
+  expect_name: Unofficial Skyrim Special Edition Patch
+  supported_game_versions:
+    "4.3.2": ["1.6.1170"]
+
+- ref: skyrimspecialedition:32444
+  expect_name: Address Library for SKSE Plugins
+  supported_game_versions:
+    "11": ["1.6.1170"]
+    "2": ["1.5.97"]
+
+- ref: skyrimspecialedition:17230
+  expect_name: SSE Engine Fixes
+  supported_game_versions:
+    "6.1.1": ["1.6.1170"]
+
+- ref: skyrimspecialedition:659
+  expect_name: Static Mesh Improvement Mod
+  supported_game_versions: {}
+
+- ref: skyrimspecialedition:272
+  expect_name: Alternate Start - Live Another Life
+  supported_game_versions:
+    "4.2.1": ["1.6.1170"]
+
+- ref: skyrimspecialedition:19080
+  expect_name: RaceMenu
+  supported_game_versions:
+    "0.4.19": ["1.6.1170"]
+
+- ref: skyrimspecialedition:1137
+  expect_name: Ordinator
+  supported_game_versions: {}
+
+- ref: skyrimspecialedition:1090
+  expect_name: Apocalypse - Magic of Skyrim
+  supported_game_versions: {}
+
+- ref: skyrimspecialedition:667
+  expect_name: Campfire
+  supported_game_versions: {}
+
+- ref: skyrimspecialedition:671
+  expect_name: Frostfall
+  supported_game_versions: {}
+
+- ref: skyrimspecialedition:13048
+  expect_name: PapyrusUtil SE
+  supported_game_versions:
+    "4.6": ["1.6.1170"]
+
+- ref: skyrimspecialedition:1429
+  expect_name: Better Dialogue Controls
+  supported_game_versions: {}
+
+- ref: skyrimspecialedition:5804
+  expect_name: A Quality World Map
+  supported_game_versions: {}
+
+- ref: skyrimspecialedition:53000
+  expect_name: MCM Helper
+  supported_game_versions:
+    "1.5.0": ["1.6.1170"]
+
+# Fallout 4 (15 mods)
+- ref: fallout4:4598
+  expect_name: Unofficial Fallout 4 Patch
+  supported_game_versions:
+    "2.1.5": ["1.10.163"]
+
+- ref: fallout4:42147
+  expect_name: Fallout 4 Script Extender
+  supported_game_versions:
+    "0.6.23": ["1.10.163"]
+
+- ref: fallout4:21497
+  expect_name: Mod Configuration Menu
+  supported_game_versions:
+    "1.39": ["1.10.163"]
+
+- ref: fallout4:6091
+  expect_name: Armor and Weapon Keywords Community Resource
+  supported_game_versions:
+    "8.6.0": ["1.10.163"]
+
+- ref: fallout4:2228
+  expect_name: Armorsmith Extended
+  supported_game_versions:
+    "4.6": ["1.10.163"]
+
+- ref: fallout4:9424
+  expect_name: Place Everywhere
+  supported_game_versions:
+    "1.18.0": ["1.10.163"]
+
+- ref: fallout4:1235
+  expect_name: Full Dialogue Interface
+  supported_game_versions: {}
+
+- ref: fallout4:18946
+  expect_name: Start Me Up
+  supported_game_versions: {}
+
+- ref: fallout4:35004
+  expect_name: Workshop Framework
+  supported_game_versions:
+    "2.3.16": ["1.10.163"]
+
+- ref: fallout4:47976
+  expect_name: Sim Settlements 2
+  supported_game_versions:
+    "3.3.4": ["1.10.163"]
+
+- ref: fallout4:4472
+  expect_name: True Storms
+  supported_game_versions: {}
+
+- ref: fallout4:25714
+  expect_name: Vivid Fallout
+  supported_game_versions: {}
+
+- ref: fallout4:15
+  expect_name: Caliente's Beautiful Bodies Enhancer
+  supported_game_versions: {}
+
+- ref: fallout4:5328
+  expect_name: Scrap Everything
+  supported_game_versions: {}
+
+- ref: fallout4:4772
+  expect_name: Better Settlers
+  supported_game_versions: {}
+
+# Stardew Valley (15 mods)
+- ref: stardewvalley:2400
+  expect_name: SMAPI
+  supported_game_versions:
+    "4.1.8": ["1.6.8", "1.6.14"]
+    "3.18.6": ["1.5.6"]
+
+- ref: stardewvalley:1915
+  expect_name: Content Patcher
+  supported_game_versions:
+    "2.3.1": ["1.6.8", "1.6.14"]
+    "1.29.3": ["1.5.6"]
+
+- ref: stardewvalley:5098
+  expect_name: Generic Mod Config Menu
+  supported_game_versions:
+    "1.12.0": ["1.6.8", "1.6.14"]
+
+- ref: stardewvalley:3753
+  expect_name: Stardew Valley Expanded
+  supported_game_versions:
+    "1.14.46": ["1.6.8", "1.6.14"]
+
+- ref: stardewvalley:1063
+  expect_name: Automate
+  supported_game_versions:
+    "2.0.7": ["1.6.8", "1.6.14"]
+
+- ref: stardewvalley:541
+  expect_name: Lookup Anything
+  supported_game_versions:
+    "1.41.0": ["1.6.8", "1.6.14"]
+
+- ref: stardewvalley:1401
+  expect_name: Tractor Mod
+  supported_game_versions:
+    "4.17.0": ["1.6.8", "1.6.14"]
+
+- ref: stardewvalley:4
+  expect_name: CJB Cheats Menu
+  supported_game_versions:
+    "1.35.4": ["1.6.8", "1.6.14"]
+
+- ref: stardewvalley:93
+  expect_name: CJB Item Spawner
+  supported_game_versions:
+    "2.2.3": ["1.6.8", "1.6.14"]
+
+- ref: stardewvalley:239
+  expect_name: NPC Map Locations
+  supported_game_versions:
+    "3.0.2": ["1.6.8", "1.6.14"]
+
+- ref: stardewvalley:1348
+  expect_name: SpaceCore
+  supported_game_versions:
+    "1.24.4": ["1.6.8", "1.6.14"]
+
+- ref: stardewvalley:6527
+  expect_name: Expanded Preconditions Utility
+  supported_game_versions:
+    "1.0.3": ["1.6.8", "1.6.14"]
+
+- ref: stardewvalley:3231
+  expect_name: Farm Type Manager
+  supported_game_versions:
+    "1.17.3": ["1.6.8", "1.6.14"]
+
+- ref: stardewvalley:963
+  expect_name: Skull Cavern Elevator
+  supported_game_versions:
+    "1.5.2": ["1.6.8", "1.6.14"]
+
+- ref: stardewvalley:5255
+  expect_name: DaisyNiko's Earthy Reco
+  supported_game_versions:
+    "1.4.1": ["1.6.8", "1.6.14"]

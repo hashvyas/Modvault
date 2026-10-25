@@ -1,0 +1,8 @@
+- { username: admin, email: admin@modvault.dev, role: admin, password: "admin-demo-123" }
+- { username: curator, email: curator@modvault.dev, role: curator, password: "curator-demo-123" }
+- { username: modder1, email: modder1@modvault.dev, role: modder, password: "modder1-demo-123" }
+- { username: modder2, email: modder2@modvault.dev, role: modder, password: "modder2-demo-123" }
+- { username: modder3, email: modder3@modvault.dev, role: modder, password: "modder3-demo-123" }
+- { username: modder4, email: modder4@modvault.dev, role: modder, password: "modder4-demo-123" }
+- { username: modder5, email: modder5@modvault.dev, role: modder, password: "modder5-demo-123" }
+- { username: modder6, email: modder6@modvault.dev, role: modder, password: "modder6-demo-123" }
