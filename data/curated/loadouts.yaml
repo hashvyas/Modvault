@@ -1,0 +1,84 @@
+- name: Broken Skyrim UI
+  owner: modder1
+  game: skyrimspecialedition
+  game_version: "1.6.1170"
+  description: "Skyrim UI setup with missing SkyUI dependency, bad load order, and menu conflict"
+  is_public: true
+  expected_status: broken
+  mods:
+    - "skyrimspecialedition:53000"
+    - "skyrimspecialedition:32444"
+    - "skyrimspecialedition:1429"
+    - "skyrimspecialedition:19080"
+  disabled: []
+
+- name: Healthy Skyrim Essentials
+  owner: modder2
+  game: skyrimspecialedition
+  game_version: "1.6.1170"
+  description: "Clean, stable foundation for Skyrim SE"
+  is_public: true
+  expected_status: healthy
+  mods:
+    - "skyrimspecialedition:266"
+    - "skyrimspecialedition:32444"
+    - "skyrimspecialedition:17230"
+    - "skyrimspecialedition:12604"
+    - "skyrimspecialedition:1429"
+  disabled: []
+
+- name: Warnings Commonwealth Setup
+  owner: modder3
+  game: fallout4
+  game_version: "1.10.163"
+  description: "Fallout 4 setup with partial conflict, load order warning, and missing recommendations"
+  is_public: true
+  expected_status: warnings
+  mods:
+    - "fallout4:21497"
+    - "fallout4:42147"
+    - "fallout4:9424"
+    - "fallout4:5328"
+    - "fallout4:18946"
+    - "fallout4:47976"
+  disabled: []
+
+- name: Broken Settlement Pack
+  owner: modder4
+  game: fallout4
+  game_version: "1.10.984"
+  description: "Fallout 4 setup on next-gen version with declared conflict and version constraint failure"
+  is_public: false
+  expected_status: broken
+  mods:
+    - "fallout4:6091"
+    - "fallout4:2228"
+    - "fallout4:35004"
+    - "fallout4:5328"
+  disabled: []
+
+- name: Healthy Farm Automation
+  owner: modder5
+  game: stardewvalley
+  game_version: "1.6.8"
+  description: "Clean automation loadout for Stardew Valley 1.6"
+  is_public: true
+  expected_status: healthy
+  mods:
+    - "stardewvalley:2400"
+    - "stardewvalley:5098"
+    - "stardewvalley:1063"
+    - "stardewvalley:1401"
+  disabled: []
+
+- name: Broken Stardew Valley Expanded
+  owner: modder6
+  game: stardewvalley
+  game_version: "1.5.6"
+  description: "SVE loaded before SMAPI with missing dependencies and game version mismatch"
+  is_public: true
+  expected_status: broken
+  mods:
+    - "stardewvalley:3753"
+    - "stardewvalley:2400"
+  disabled: []

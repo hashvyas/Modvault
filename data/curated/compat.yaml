@@ -1,0 +1,32 @@
+# Skyrim Special Edition Compatibility
+- { a: "skyrimspecialedition:12604", b: "skyrimspecialedition:1429", status: compatible, verified_by: curator, detail: { reason: "Clean interface compatibility without menu overlaps" } }
+- { a: "skyrimspecialedition:12604", b: "skyrimspecialedition:53000", status: compatible, verified_by: curator, detail: { reason: "Official SkyUI MCM extension framework" } }
+- { a: "skyrimspecialedition:32444", b: "skyrimspecialedition:17230", status: compatible, verified_by: admin, detail: { reason: "Standard plugin engine integration" } }
+- { a: "skyrimspecialedition:659", b: "skyrimspecialedition:5804", status: compatible, verified_by: curator, detail: { reason: "No mesh or texture conflicts" } }
+- { a: "skyrimspecialedition:1137", b: "skyrimspecialedition:1090", status: compatible, verified_by: curator, detail: { reason: "Built to work together seamlessly by EnaiSiaion" } }
+- { a: "skyrimspecialedition:671", b: "skyrimspecialedition:667", status: compatible, verified_by: curator, detail: { reason: "Direct parent-child survival synergy" } }
+- { a: "skyrimspecialedition:1429", b: "skyrimspecialedition:19080", status: incompatible, verified_by: curator, detail: { reason: "Menu conflict in dialogue/character creation hooks", files: ["interface/dialoguemenu.swf"] } }
+- { a: "skyrimspecialedition:272", b: "skyrimspecialedition:266", status: compatible, verified_by: curator, detail: { reason: "Fully patched for USSEP quest changes" } }
+- { a: "skyrimspecialedition:659", b: "skyrimspecialedition:671", status: partial, verified_by: curator, detail: { reason: "Campfire meshes overwrite some SMIM lantern models", files: ["meshes/clutter/lantern01.nif"] } }
+- { a: "skyrimspecialedition:19080", b: "skyrimspecialedition:1137", status: unknown, verified_by: null, detail: null }
+
+# Fallout 4 Compatibility
+- { a: "fallout4:42147", b: "fallout4:21497", status: compatible, verified_by: curator, detail: { reason: "F4SE script menu provider" } }
+- { a: "fallout4:6091", b: "fallout4:2228", status: compatible, verified_by: curator, detail: { reason: "Armorsmith uses AWKCR crafting keywords" } }
+- { a: "fallout4:35004", b: "fallout4:47976", status: compatible, verified_by: curator, detail: { reason: "Official SS2 workshop engine" } }
+- { a: "fallout4:5328", b: "fallout4:35004", status: incompatible, verified_by: curator, detail: { reason: "Breaking precombines conflicts with workshop grid optimization", files: ["scripts/workshopscript.pex"] } }
+- { a: "fallout4:4472", b: "fallout4:25714", status: compatible, verified_by: curator, detail: { reason: "Weather and landscape textures do not conflict" } }
+- { a: "fallout4:9424", b: "fallout4:5328", status: partial, verified_by: curator, detail: { reason: "Requires careful load order to avoid disappearing settlement meshes", files: ["scripts/placeeverywhere.ini"] } }
+- { a: "fallout4:1235", b: "fallout4:18946", status: partial, verified_by: curator, detail: { reason: "Requires Start Me Up FDI compatibility patch for dialogue strings", files: ["strings/fallout4_en.strings"] } }
+- { a: "fallout4:4772", b: "fallout4:15", status: compatible, verified_by: curator, detail: { reason: "Better Settlers has native CBBE body options" } }
+- { a: "fallout4:47976", b: "fallout4:18946", status: unknown, verified_by: null, detail: null }
+
+# Stardew Valley Compatibility
+- { a: "stardewvalley:2400", b: "stardewvalley:1915", status: compatible, verified_by: curator, detail: { reason: "Core SMAPI content pipeline" } }
+- { a: "stardewvalley:2400", b: "stardewvalley:5098", status: compatible, verified_by: curator, detail: { reason: "Core config UI provider" } }
+- { a: "stardewvalley:1915", b: "stardewvalley:3753", status: compatible, verified_by: curator, detail: { reason: "SVE requires Content Patcher for maps and portraits" } }
+- { a: "stardewvalley:1348", b: "stardewvalley:3753", status: compatible, verified_by: curator, detail: { reason: "Required custom skill and event framework" } }
+- { a: "stardewvalley:1063", b: "stardewvalley:1401", status: compatible, verified_by: curator, detail: { reason: "Pathoschild mods verified together" } }
+- { a: "stardewvalley:4", b: "stardewvalley:93", status: compatible, verified_by: curator, detail: { reason: "Built by CJB to complement each other" } }
+- { a: "stardewvalley:5255", b: "stardewvalley:3753", status: partial, verified_by: curator, detail: { reason: "SVE new tilesheets have slight tint difference unless SVE Earthy patch is installed", files: ["assets/Tilesheets/spring_outdoorsTileSheet.png"] } }
+- { a: "stardewvalley:963", b: "stardewvalley:1063", status: unknown, verified_by: null, detail: null }
