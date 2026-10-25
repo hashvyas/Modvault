@@ -5,3 +5,4 @@ node_modules/
 
 docs/handoff/person1.md
 person1.md
+__pycache__/
