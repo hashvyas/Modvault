@@ -1,0 +1,78 @@
+# ModVault database CI: builds the schema and seed on PostgreSQL 18 + pgvector,
+# then runs every SQL test and demonstration file with ON_ERROR_STOP=1.
+name: db
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  database:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    services:
+      postgres:
+        image: pgvector/pgvector:pg18
+        env:
+          # Owner credentials from section 3 of the plan. POSTGRES_USER is a
+          # superuser in this image, as the owner is in local development.
+          POSTGRES_USER: modvault_owner
+          POSTGRES_PASSWORD: modvault_owner_dev
+          POSTGRES_DB: modvault
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U modvault_owner -d modvault"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgresql://modvault_owner:modvault_owner_dev@localhost:5432/modvault
+      PGCLIENTENCODING: UTF8
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install PostgreSQL 18 client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-common
+          sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y
+          sudo apt-get install -y postgresql-client-18
+          echo "/usr/lib/postgresql/18/bin" >> "$GITHUB_PATH"
+
+      - name: Client and server versions
+        run: |
+          psql --version
+          psql -X "$DATABASE_URL" -At -c "SHOW server_version;" -c "SELECT extversion FROM pg_available_extensions WHERE name = 'vector';"
+
+      - name: Build schema and seed (db_reset.py)
+        run: python scripts/db_reset.py
+
+      # Exact row counts, so it runs before the fixtures add rows.
+      - name: Seed expectations
+        run: psql -X -v ON_ERROR_STOP=1 -d "$DATABASE_URL" -f database/seed_expectations.sql
+
+      - name: Load test fixtures
+        run: psql -X -v ON_ERROR_STOP=1 -d "$DATABASE_URL" -f database/tests/fixtures.sql
+
+      - name: SQL tests (run_tests.sql)
+        run: psql -X -v ON_ERROR_STOP=1 -d "$DATABASE_URL" -f database/tests/run_tests.sql
+
+      - name: Query catalogue (queries.sql)
+        run: psql -X -v ON_ERROR_STOP=1 -d "$DATABASE_URL" -f database/queries.sql > /dev/null
+
+      - name: DDL demo (ddl_demo.sql)
+        run: psql -X -v ON_ERROR_STOP=1 -d "$DATABASE_URL" -f database/ddl_demo.sql
+
+      # The two-session timelines in this file are comments; everything that
+      # executes is single-session. Its intentional errors are wrapped in
+      # \set ON_ERROR_STOP off / on.
+      - name: Transactions, single-session parts (transactions.sql)
+        run: psql -X -v ON_ERROR_STOP=1 -d "$DATABASE_URL" -f database/transactions.sql
