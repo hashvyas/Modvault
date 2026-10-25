@@ -38,7 +38,7 @@
     - "fallout4:21497"
     - "fallout4:42147"
     - "fallout4:9424"
-    - "fallout4:5328"
+    - "fallout4:5320"
     - "fallout4:18946"
     - "fallout4:47976"
   disabled: []
@@ -54,7 +54,7 @@
     - "fallout4:6091"
     - "fallout4:2228"
     - "fallout4:35004"
-    - "fallout4:5328"
+    - "fallout4:5320"
   disabled: []
 
 - name: Healthy Farm Automation

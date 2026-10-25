@@ -16,7 +16,7 @@
 - { mod: "fallout4:47976", requires: "fallout4:4598", type: recommends, constraint: ">=2.0.0", source: manual }
 - { mod: "fallout4:9424", requires: "fallout4:42147", type: required, constraint: ">=0.6.0", source: nexus }
 - { mod: "fallout4:4772", requires: "fallout4:15", type: optional, constraint: null, source: manual }
-- { mod: "fallout4:5328", requires: "fallout4:35004", type: conflicts, constraint: null, source: manual }
+- { mod: "fallout4:5320", requires: "fallout4:35004", type: conflicts, constraint: null, source: manual }
 - { mod: "fallout4:18946", requires: "fallout4:4598", type: recommends, constraint: null, source: manual }
 
 # Stardew Valley Dependencies
@@ -25,7 +25,7 @@
 - { mod: "stardewvalley:3753", requires: "stardewvalley:2400", type: required, constraint: ">=3.14.0", source: nexus }
 - { mod: "stardewvalley:3753", requires: "stardewvalley:1915", type: required, constraint: ">=1.20.0", source: nexus }
 - { mod: "stardewvalley:3753", requires: "stardewvalley:1348", type: required, constraint: ">=1.0.0", source: nexus }
-- { mod: "stardewvalley:3753", requires: "stardewvalley:6527", type: required, constraint: ">=1.0.0", source: nexus }
+- { mod: "stardewvalley:3753", requires: "stardewvalley:6529", type: required, constraint: ">=1.0.0", source: nexus }
 - { mod: "stardewvalley:3753", requires: "stardewvalley:3231", type: required, constraint: ">=1.0.0", source: nexus }
 - { mod: "stardewvalley:1063", requires: "stardewvalley:2400", type: required, constraint: ">=3.0.0", source: nexus }
 - { mod: "stardewvalley:1063", requires: "stardewvalley:5098", type: optional, constraint: null, source: manual }
