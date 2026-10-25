@@ -380,23 +380,23 @@ Import rules: `format` must match, else `INVALID_MANIFEST`. The new loadout belo
 
 ## 7. Phases
 
-| Phase | Title | Tasks |
-|---|---|---|
-| 0 | Setup | P2-00 |
-| 1 | Data pipeline | P2-01, P2-02, P2-03, P2-04 |
-| 2 | Embeddings, web scaffold and auth | P2-05, P2-06, P2-07 |
-| 3 | Discovery pages | P2-08, P2-09 |
-| 4 | Loadouts, curation and admin | P2-10, P2-11, P2-12 |
-| 5 | Testing and deploy | P2-13, P2-14 |
-| 6 | Final merge | together |
+| Phase | Title | Tasks | Status |
+|---|---|---|---|
+| 0 | Setup | P2-00 | [x] Completed |
+| 1 | Data pipeline | P2-01, P2-02, P2-03, P2-04 | [x] Completed |
+| 2 | Embeddings, web scaffold and auth | P2-05, P2-06, P2-07 | [ ] Pending |
+| 3 | Discovery pages | P2-08, P2-09 | [ ] Pending |
+| 4 | Loadouts, curation and admin | P2-10, P2-11, P2-12 | [ ] Pending |
+| 5 | Testing and deploy | P2-13, P2-14 | [ ] Pending |
+| 6 | Final merge | together | [ ] Pending |
 
-### Phase 0: Setup
+### Phase 0: Setup - [COMPLETED]
 
 Goal: Local environment ready on `p2-app` against the shared foundation.
 
 Depends on: Person 1 Phase 0 pushed to `main`.
 
-#### P2-00 Local setup
+#### P2-00 Local setup - [COMPLETED]
 
 Files: `.env` (local only, never committed).
 
@@ -413,13 +413,13 @@ Done when: the reset exits with code 0 and `SELECT * FROM fn_check_loadout_compa
 - `python scripts/db_reset.py` exits with code 0.
 - `.env` is listed in `.gitignore` and not committed.
 
-### Phase 1: Data pipeline
+### Phase 1: Data pipeline - [COMPLETED]
 
 Goal: Real Nexus data pulled, curated relationships written, deterministic `seed.sql` generated.
 
 Depends on: Phase 0.
 
-#### P2-01 Curated mod list
+#### P2-01 Curated mod list - [COMPLETED]
 
 Files: `data/curated/games.yaml`, `data/curated/mods.yaml`.
 
@@ -442,7 +442,7 @@ Steps: list 15 mods per game with real dependency relationships. Good anchors: S
 
 Done when: 45 entries exist and the human has confirmed the IDs.
 
-#### P2-02 Nexus pull script
+#### P2-02 Nexus pull script - [COMPLETED]
 
 Files: `scripts/nexus/pull.py`, `scripts/nexus/requirements.txt`.
 
@@ -459,7 +459,7 @@ python scripts/nexus/pull.py --games skyrimspecialedition fallout4 stardewvalley
 
 Done when: 93 JSON files exist in `data/raw/` and the name check passes for all 45 mods.
 
-#### P2-03 Curated relationship data
+#### P2-03 Curated relationship data - [COMPLETED]
 
 Files: `data/curated/users.yaml`, `tags.yaml`, `dependencies.yaml`, `compat.yaml`, `reviews.yaml`, `loadouts.yaml`.
 
@@ -501,7 +501,7 @@ Requirements:
 
 Done when: every ref resolves to a mod in `mods.yaml`.
 
-#### P2-04 Seed generator
+#### P2-04 Seed generator - [COMPLETED]
 
 Files: `scripts/nexus/generate_seed.py`, `database/seed.sql`, `database/seed_expectations.sql`.
 
