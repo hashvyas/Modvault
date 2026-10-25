@@ -2,3 +2,6 @@
 data/raw/
 node_modules/
 .next/
+
+docs/handoff/
+person1.md
