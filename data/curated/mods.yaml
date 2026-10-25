@@ -129,7 +129,7 @@
   expect_name: Caliente's Beautiful Bodies Enhancer
   supported_game_versions: {}
 
-- ref: fallout4:5328
+- ref: fallout4:5320
   expect_name: Scrap Everything
   supported_game_versions: {}
 
@@ -195,7 +195,7 @@
   supported_game_versions:
     "1.24.4": ["1.6.8", "1.6.14"]
 
-- ref: stardewvalley:6527
+- ref: stardewvalley:6529
   expect_name: Expanded Preconditions Utility
   supported_game_versions:
     "1.0.3": ["1.6.8", "1.6.14"]

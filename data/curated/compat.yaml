@@ -14,9 +14,9 @@
 - { a: "fallout4:42147", b: "fallout4:21497", status: compatible, verified_by: curator, detail: { reason: "F4SE script menu provider" } }
 - { a: "fallout4:6091", b: "fallout4:2228", status: compatible, verified_by: curator, detail: { reason: "Armorsmith uses AWKCR crafting keywords" } }
 - { a: "fallout4:35004", b: "fallout4:47976", status: compatible, verified_by: curator, detail: { reason: "Official SS2 workshop engine" } }
-- { a: "fallout4:5328", b: "fallout4:35004", status: incompatible, verified_by: curator, detail: { reason: "Breaking precombines conflicts with workshop grid optimization", files: ["scripts/workshopscript.pex"] } }
+- { a: "fallout4:5320", b: "fallout4:35004", status: incompatible, verified_by: curator, detail: { reason: "Breaking precombines conflicts with workshop grid optimization", files: ["scripts/workshopscript.pex"] } }
 - { a: "fallout4:4472", b: "fallout4:25714", status: compatible, verified_by: curator, detail: { reason: "Weather and landscape textures do not conflict" } }
-- { a: "fallout4:9424", b: "fallout4:5328", status: partial, verified_by: curator, detail: { reason: "Requires careful load order to avoid disappearing settlement meshes", files: ["scripts/placeeverywhere.ini"] } }
+- { a: "fallout4:9424", b: "fallout4:5320", status: partial, verified_by: curator, detail: { reason: "Requires careful load order to avoid disappearing settlement meshes", files: ["scripts/placeeverywhere.ini"] } }
 - { a: "fallout4:1235", b: "fallout4:18946", status: partial, verified_by: curator, detail: { reason: "Requires Start Me Up FDI compatibility patch for dialogue strings", files: ["strings/fallout4_en.strings"] } }
 - { a: "fallout4:4772", b: "fallout4:15", status: compatible, verified_by: curator, detail: { reason: "Better Settlers has native CBBE body options" } }
 - { a: "fallout4:47976", b: "fallout4:18946", status: unknown, verified_by: null, detail: null }
