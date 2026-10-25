@@ -185,3 +185,72 @@
 - `fn_search_mods_hybrid`: pass a NULL embedding for keyword-only search, and a NULL or empty query for vector-only search. The limit is capped at 50. `semantic_rank` / `keyword_rank` are NULL when that half did not find the mod, so the "Meaning" / "Keyword" badges can key on them.
 - `fn_loadout_health_score` raises `MODVAULT:NOT_FOUND` for an unknown loadout. `fn_check_loadout_compatibility` returns zero rows instead.
 - There can be many info rows (`UNVERIFIED_PAIR`). Collapse them in the UI.
+
+
+## Phase 3: Procedures, views and security (2026-10-25)
+
+### What was built
+
+- `database/functions.sql`: `fn_export_loadout` and all eight `pr_` procedures now have real bodies. No stubs are left in the contract.
+- `database/views.sql`: `loadout_health_view`, `mod_conflict_summary_view` and `mv_game_leaderboard` are no longer stubs. `loadout_summary_view` and `loadout_health_view` now use `security_invoker = true`.
+- `database/rls.sql`: creates the `modvault_app` role, sets its grants and enables Row-Level Security with policies on six tables.
+- `database/tests/test_procedures.sql` (10 checks), `database/tests/test_views.sql` (4 checks), `database/tests/test_rls.sql` (7 checks): new.
+
+### How it works
+
+- `fn_export_loadout`: one SQL query. `jsonb_build_object` builds the manifest and `jsonb_agg(... ORDER BY position)` builds the mods array. An unknown or invisible loadout gives NULL. Concept: JSON construction, ordered aggregate.
+- `pr_publish_mod`: checks for a logged-in user (`FORBIDDEN`), a non-blank name and version (`INVALID_INPUT`) and that the game exists (`NOT_FOUND`). It then inserts the mod with `RETURNING mod_id INTO p_mod_id`, inserts one primary version, creates missing tags with `INSERT ... ON CONFLICT DO NOTHING` and links the tags. Concept: procedure with an INOUT parameter, upsert.
+- `pr_add_mod_to_loadout`: `NOT_FOUND` if the loadout is not visible, `FORBIDDEN` if the caller does not own it. When another version of the same mod is in the loadout, an `UPDATE ... FROM` switches that row's version in place, keeping its position. Otherwise it inserts a new row, and the position trigger appends it at the end.
+- `pr_apply_load_order`: one `UPDATE ... FROM fn_suggest_load_order(...)`.
+- `pr_import_loadout`: validates the manifest (`INVALID_MANIFEST`), creates the loadout for `fn_current_user_id()`, then loops over the entries, lowest position first. Each entry has its own `BEGIN ... EXCEPTION WHEN others` block. PL/pgSQL runs that block as a subtransaction (an implicit savepoint), so a failing entry is rolled back alone and counted in `p_skipped`. The version is resolved by semver, falling back to the mod's primary version. Concept: savepoint / subtransaction error handling.
+- `pr_promote_version`: curator or admin only (`FORBIDDEN` otherwise). `SELECT ... FOR UPDATE` locks every version of the mod, then sets the target as primary. The Phase 1 trigger demotes the old primary. Concept: pessimistic row locking.
+- `pr_upsert_compatibility`: curator or admin only. It inserts `(least(a,b), greatest(a,b))` so the pair is already in canonical order, and `ON CONFLICT (version_a_id, version_b_id) DO UPDATE` hits the stored row. Concept: INSERT ... ON CONFLICT DO UPDATE.
+- `pr_set_user_role`, `pr_refresh_reports`: admin only, `SECURITY DEFINER`. The app role has no UPDATE right on users, and only the owner may refresh a materialized view. The refresh uses `REFRESH MATERIALIZED VIEW CONCURRENTLY`. Concept: definer rights.
+- `loadout_health_view`: `LEFT JOIN LATERAL fn_check_loadout_compatibility(l.loadout_id) ON true`, then `count(*) FILTER (WHERE severity = ...)`. Score and status are computed inline using the 6.6 formula. Concept: LATERAL join, aggregate FILTER.
+- `mod_conflict_summary_view`: four correlated scalar subqueries per mod.
+- `mv_game_leaderboard`: CTE `game_mean` (average review rating per game), then `bayes_score = (5*m + n*avg)/(5+n)`, then `RANK() OVER (PARTITION BY game_id ORDER BY bayes_score DESC, download_count DESC)`, keeping ranks up to 20. Concept: materialized view, window function, Bayesian average.
+- `rls.sql`: the role is created inside a `DO` block only when missing. Grants are listed table by table, so `users` gets a column list without `password_hash`. Each table with a stricter write rule has one `FOR SELECT` policy plus one policy per write command (a `FOR ALL` policy would also widen SELECT). The `loadout_mods` policies use `EXISTS (SELECT 1 FROM loadouts ...)`, and that subquery is itself filtered by the loadouts policies. Concept: column privileges, RLS USING / WITH CHECK.
+
+### Decisions
+
+- `security_invoker = true` on the two loadout views. A plain view reads tables as its owner, and the owner bypasses RLS, so without it `loadout_summary_view` would show every private loadout's name to the app role. The rejected alternative was leaving them plain and filtering in the app, which goes against the "logic lives in PostgreSQL" rule.
+- `pr_add_mod_to_loadout` raises `FORBIDDEN` for someone else's public loadout. Without that check the insert would fail with the raw RLS error, which the app cannot parse.
+- Adding a version that is already in the loadout does nothing, instead of failing on the unique constraint.
+- `pr_apply_load_order` only updates rows whose position actually changes, so the audit log does not fill with no-op updates.
+- The import loop sorts by position because of the position trigger: an entry at position 0 inserted after other rows would be treated as "append".
+- Bayesian score is rounded to 4 decimal places, so ties compare cleanly and the tests can check exact values.
+- Added `tests/test_views.sql`. The spec gives P1-08 "Done when" checks but no file for them.
+- `pr_promote_version` is restricted to curators and admins, at the human's request. The first version let any user promote any mod's version, because the spec had no rule. That was too open: any modder could change which version every user gets by default. The role check uses `fn_current_role()`, like `pr_upsert_compatibility`.
+- `test_rls.sql` check 1 now covers both directions: user A (modder) cannot see user B's private loadout, and user B (curator, not admin) cannot see user A's private loadout `e..01`. Each direction is checked in `loadouts`, `loadout_summary_view` and `loadout_health_view`. B can still see B's own loadout in both views, which shows the views filter rather than return nothing.
+
+### Assumptions
+
+- `database/functions.sql`, `pr_publish_mod`: a new tag's name is its slug. A slug whose name is already taken by another tag is skipped.
+- `database/functions.sql`, `pr_add_mod_to_loadout`: a visible loadout owned by someone else raises `FORBIDDEN`.
+- `database/functions.sql`, `pr_import_loadout`: an unknown game domain, a missing name or a non-array `mods` raises `INVALID_MANIFEST`.
+- `database/views.sql`, `mv_game_leaderboard`: a game with no reviews uses m = 0.
+
+### Checks
+
+- `python scripts/db_reset.py`: done, with the real seed.
+- `psql ... -f database/seed_expectations.sql` on a clean build: "all assertions passed". All six seed loadouts get the expected status from `loadout_health_view`.
+- After `tests/fixtures.sql`: `test_triggers` PASS 1 to 9, `test_auth` PASS 1 to 5, `test_health` PASS 1 to 12, `test_graph` PASS 1 to 7, `test_search` PASS 1 to 4, `test_procedures` PASS 1 to 10, `test_views` PASS 1 to 4, `test_rls` PASS 1 to 7. All exit 0. Re-run on a fresh `db_reset.py` build after the `pr_promote_version` role check and the extra RLS view checks were added. `test_procedures` check 8 now shows a modder refused with `FORBIDDEN` (primary unchanged) and a curator succeeding.
+- `REFRESH MATERIALIZED VIEW CONCURRENTLY mv_game_leaderboard`: succeeds (51 rows on seed + fixtures).
+- Contract: the `pg_proc` dump of every `fn_` / `pr_` routine matches section 6. The column types of the three new views match the Phase 0 stubs.
+
+### Open issues
+
+- `seed_expectations.sql` asserts exact row counts, so it fails when `tests/fixtures.sql` is also loaded. Run it on a clean `db_reset.py` build.
+- `pr_add_mod_to_loadout`: if a loadout already holds two versions of one mod (possible through import) and a third version is added, both rows are switched to it and the unique constraint fails. This is rare, and the error is the raw constraint error.
+- The `modvault_app` password is the dev one. Change it with `ALTER ROLE` on Neon.
+- `fn_current_role()` trusts `app.role`. The app must set it only from the verified JWT.
+
+### For the other person
+
+- Sync 2 is ready: every contract routine and view now works. Merge `main` after the PR lands and run `seed_expectations.sql` on a clean build. It passes today.
+- Connect as `modvault_app` (`APP_DATABASE_URL`). In every transaction run `SELECT set_config('app.user_id', $1, true), set_config('app.role', $2, true)` before anything else, or RLS hides private data and the role checks fail.
+- `users.password_hash` is not selectable. `SELECT *` on users raises permission denied, so list the columns.
+- Procedures return INOUT values as a result row: `CALL pr_import_loadout($1, NULL, NULL)` returns `p_loadout_id, p_skipped`, and `CALL pr_publish_mod(..., NULL)` returns `p_mod_id`.
+- Errors: `pr_add_mod_to_loadout` raises NOT_FOUND / FORBIDDEN / GAME_MISMATCH. `pr_import_loadout` raises INVALID_MANIFEST / FORBIDDEN. `pr_upsert_compatibility` and `pr_promote_version` raise FORBIDDEN for modders (curator or admin only), so hide the "make primary" button from modders. `pr_set_user_role` and `pr_refresh_reports` raise FORBIDDEN for anyone but an admin.
+- `fn_export_loadout` returns NULL for an unknown or invisible loadout. Mods published on ModVault (no `nexus_mod_id`) export with a NULL id and are skipped on import.
+- The leaderboard is a materialized view. Call `pr_refresh_reports()` (admin) after reviews change.
