@@ -1,0 +1,11 @@
+- domain: skyrimspecialedition
+  current_version: "1.6.1170"
+  versions: ["1.5.97", "1.6.640", "1.6.1170"]
+
+- domain: fallout4
+  current_version: "1.10.163"
+  versions: ["1.10.163", "1.10.984"]
+
+- domain: stardewvalley
+  current_version: "1.6.8"
+  versions: ["1.5.6", "1.6.8", "1.6.14"]
