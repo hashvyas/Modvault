@@ -57,3 +57,64 @@
 - All contract routines exist as stubs. They return no rows, NULL, `false`, `0` or `'{}'` until Phases 2 and 3 fill the bodies. You can wire calls against them now.
 - `seed.sql` is yours from here on. It must be UTF-8 without BOM and start with `SET client_encoding = 'UTF8';`. Mods need `author_id` NULL plus `nexus_author`, and `(game_id, nexus_mod_id)` must be unique.
 - After every sync, run `python scripts/db_reset.py`.
+
+## Phase 1: Indexes and triggers (2026-10-25)
+
+### What was built
+
+- `database/indexes.sql`: 7 new indexes on top of the existing 9 (16 total). HNSW on `mods.embedding` (vector search), GIN on `mods.search_tsv` (full-text), GIN on `mod_versions.supported_game_versions` (array containment), B-tree on `mod_dependencies.required_mod_id` (reverse dependency lookup), two on `audit_log` (by table and time, by user), and the partial unique index `uq_mod_versions_one_primary`.
+- `database/functions.sql`, section 1: 8 trigger functions: `fn_compat_canonicalise_pair`, `fn_mod_version_single_primary`, `fn_set_updated_at`, `fn_loadout_mods_auto_position`, `fn_loadout_mods_game_check`, `fn_reviews_rating_rollup`, `fn_audit_log`, `fn_audit_log_immutable`. Section 2: the real one-line bodies of `fn_current_user_id` and `fn_current_role` (see Decisions).
+- `database/triggers.sql`: rewritten. 18 `CREATE TRIGGER` statements. The obsolete `mv_mod_ratings` refresh outline is gone.
+- `database/tests/fixtures.sql` (new): 2 games, 3 users (one per role, password `fixture-pass`), 6 mods, 8 versions, 5 dependencies (every dep_type), 4 matrix rows (one per status), 2 loadouts with 5 rows. Fixed UUIDs (`a...` games, `b...` users, `c...` mods, `d...` versions, `e...` loadouts).
+- `database/tests/test_triggers.sql` (new): 9 trigger tests: the 7 from P1-02, plus test 8 (changing `old_row` on an audit row raises FORBIDDEN) and test 9 (deleting a user with audit history succeeds, their audit rows get `changed_by` NULL, `old_row` and `new_row` stay the same).
+
+### How it works
+
+- Pair canonicalisation: a BEFORE row trigger rewrites `NEW` (swaps A and B when A > B). Concept: BEFORE trigger that changes the row before it is written. The existing unique constraint then catches (A, B) and (B, A) as the same pair.
+- Single primary: BEFORE INSERT OR UPDATE OF is_primary. When the new row is primary, it first sets `is_primary = false` on the mod's other versions, so the partial unique index never sees two primaries. Concept: `UPDATE OF <column>` trigger plus a partial unique index as a hard backstop.
+- `fn_set_updated_at`: one generic function attached to users, mods, loadouts, compatibility_matrix. Concept: trigger function reuse.
+- Auto position: BEFORE INSERT on loadout_mods. Position 0 means "append": it becomes `max(position) + 1`, or stays 0 for an empty loadout.
+- Game check: BEFORE INSERT OR UPDATE on loadout_mods. Looks up the loadout's game and the version's mod game. If they differ it raises `MODVAULT:GAME_MISMATCH: <mod> is made for a different game than this loadout`. Missing rows are left to the foreign keys.
+- Rating rollup: AFTER row trigger on reviews. Recomputes `rating_avg` (rounded to 2 places, same as `mod_ratings_view`) and `rating_count` for only the affected mod ids: NEW on insert, OLD on delete, both on update. SECURITY DEFINER because review authors will not have UPDATE on mods. Concept: trigger-maintained denormalised cache.
+- Audit: one function `fn_audit_log` on 8 tables, the primary key column name passed as a trigger argument (`TG_ARGV[0]`). It turns OLD and NEW into JSONB with `to_jsonb`, removes `password_hash`, `embedding`, `search_tsv`, and writes `changed_by = fn_current_user_id()`. An UPDATE whose only changes are in `updated_at`, `rating_avg`, `rating_count`, `embedding`, `search_tsv` is skipped. Concept: generic AFTER row trigger, SECURITY DEFINER with pinned `search_path`.
+- Immutable audit log: BEFORE UPDATE OR DELETE on audit_log raises `MODVAULT:FORBIDDEN`. Concept: append-only table enforced by trigger.
+- Tests: each check is `BEGIN; DO $$ ... ASSERT ... $$; ROLLBACK;`. Expected errors are caught in a nested `BEGIN ... EXCEPTION` block and the message is matched against `MODVAULT:<CODE>: %`.
+- Test 9 step by step: insert a temporary user, set `app.user_id` to that user, edit a fixture loadout (one audit row with `changed_by` = that user), switch `app.user_id` to the fixture admin, delete the user, then compare the audit row before and after. Only `changed_by` changes, to NULL. Concept: a foreign-key `ON DELETE SET NULL` action is an UPDATE, so BEFORE UPDATE triggers on the referencing table see it.
+
+### Decisions
+
+- `fn_current_user_id` and `fn_current_role` got their real bodies now instead of in P1-03. Reason: `fn_audit_log` uses `fn_current_user_id()` and test 5 asserts `changed_by` equals the session user, which cannot pass with the NULL stub. The bodies are exactly the section 6.1 one-liners, so nothing in Phase 2 changes. Alternative rejected: reading `current_setting` directly in `fn_audit_log`, which duplicates the contract helper.
+- The audit skip check compares rows before hiding columns. Reason: if `password_hash` were hidden first, a password change would look like "nothing changed" and not be logged. Now it is logged, but without the hash.
+- `audit_log` lets one kind of UPDATE through: `changed_by` set to NULL with nothing else changed. Reason: `changed_by` has `ON DELETE SET NULL`, which PostgreSQL runs as an UPDATE on audit_log. Without the exception, any user who ever changed anything could never be deleted. Covered by test 9. Test 8 shows that any other UPDATE, for example changing `old_row`, still raises FORBIDDEN. Alternative rejected: changing the FK to `NO ACTION` (would need a `schema.sql` change, which is frozen).
+- Game check compares game ids only when both are found, so a missing loadout or version gives the normal foreign-key error, not a misleading GAME_MISMATCH.
+- Fixture names start with `FX` / `Fixture` and use domains `fx-game-a`, `fx-game-b`, so they never hit the unique name and domain constraints once Person 2's real seed is loaded.
+- Test 4 also checks an UPDATE that moves a review to another mod (both mods refreshed) and a DELETE of the last review (cache back to 0). Small addition beyond the spec, because those are the two branches most likely to be wrong.
+
+### Assumptions
+
+- `database/functions.sql`, section 2 header: session helpers filled in Phase 1 instead of P1-03.
+- `database/functions.sql`, `fn_audit_log_immutable`: the FK `SET NULL` update on `changed_by` is allowed.
+- "`\di` lists 16 indexes" means the 16 indexes defined in `indexes.sql`. `\di` itself shows 41, because it also lists primary-key, unique-constraint and materialized-view indexes.
+
+### Checks
+
+- `python scripts/db_reset.py`: exit code 0, 16 `CREATE INDEX` from indexes.sql, 18 `CREATE TRIGGER`.
+- `psql ... -f database/tests/fixtures.sql`: exit code 0. Produces 33 audit rows.
+- `pg_indexes` query: 16 indexes from indexes.sql (all 9 old plus the 7 new names).
+- `psql ... -v ON_ERROR_STOP=1 -f database/tests/test_triggers.sql`: exit code 0, `PASS 1` to `PASS 9`, zero failed assertions.
+
+### Open issues
+
+- Auto position is not safe under two concurrent inserts into the same loadout (both can read the same max). Marked with a `shortcut:` comment. Fine for one user editing their own loadout.
+- Position 0 always means "append" when rows exist, so an explicit insert at position 0 into a non-empty loadout goes to the end. That is the spec rule. Reordering goes through `pr_apply_load_order` or an UPDATE, which the trigger does not touch.
+- `fixtures.sql` is not yet run by `db_reset.py` or CI. Phase 5 (P1-11) wires it in.
+- A user cannot delete themselves while `app.user_id` is set to their own id. The delete cascades to their loadouts and reviews, the audit trigger writes rows with `changed_by` = that user, and the foreign key to the already-deleted user fails. Test 9 avoids this by switching to the admin before the delete. Revisit if a "delete my account" feature is added: run the delete with `app.user_id` cleared or set to an admin.
+
+### For the other person
+
+- `fn_current_user_id()` and `fn_current_role()` now work. Set `app.user_id` and `app.role` with `set_config(..., true)` at the start of every app transaction, otherwise audit rows get `changed_by = NULL`. `app.user_id` must be a real user id (it is a foreign key in audit_log).
+- Adding a version of a mod from another game to a loadout now fails with `MODVAULT:GAME_MISMATCH: ...`. Show the human text.
+- Inserting into `loadout_mods` without a position appends to the end.
+- `mods.rating_avg` / `rating_count` are maintained by trigger. Do not write them from the app or seed.
+- Setting `is_primary = true` on a version automatically demotes the old primary.
+- `audit_log` cannot be updated or deleted (FORBIDDEN). Deleting a user is fine and keeps their audit rows with `changed_by` NULL, but never delete a user while `app.user_id` is that same user (see Open issues).
