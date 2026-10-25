@@ -118,3 +118,70 @@
 - `mods.rating_avg` / `rating_count` are maintained by trigger. Do not write them from the app or seed.
 - Setting `is_primary = true` on a version automatically demotes the old primary.
 - `audit_log` cannot be updated or deleted (FORBIDDEN). Deleting a user is fine and keeps their audit rows with `changed_by` NULL, but never delete a user while `app.user_id` is that same user (see Open issues).
+
+## Phase 2: Core SQL logic (2026-10-25)
+
+### What was built
+
+- `database/functions.sql`: real bodies for 10 contract functions. Auth: `fn_register_user`, `fn_authenticate`. Search: `fn_search_mods_hybrid`, `fn_search_mods_by_tag`. Mods: `fn_get_mod_dependency_tree`, `fn_mod_stats`, `fn_semver_satisfies`. Loadouts: `fn_check_loadout_compatibility`, `fn_loadout_health_score`, `fn_suggest_load_order`. `fn_export_loadout` and all procedures are still stubs (Phase 3).
+- `database/tests/test_auth.sql` (new): 5 checks. Register then log in, failed logins (wrong password, unknown user, NULL, inactive user), DUPLICATE for username and email, INVALID_INPUT for 5 bad inputs, 18 semver cases.
+- `database/tests/test_health.sql` (new): 12 checks. One loadout per issue type (9), a clean loadout scoring 100, a disabled conflicting mod, and score formula / result order / unknown ids.
+- `database/tests/test_graph.sql` (new): 7 checks. 3-level dependency chain, conflicts not followed, A to B to A cycle, load order on a shuffled loadout, load order with a cycle, `fn_mod_stats` counts, tag AND match.
+- `database/tests/test_search.sql` (new): 4 checks with hand-made 384-dim one-hot vectors. Keyword only, vector only, fused rank, game filter / limit cap / empty input.
+
+### How it works
+
+- `fn_register_user` (PL/pgSQL, SECURITY DEFINER): checks the username regex, `@` in the email, password length, then inserts with `crypt(pw, gen_salt('bf', 10))`. A `unique_violation` is caught in an `EXCEPTION` block and turned into `MODVAULT:DUPLICATE`. `GET STACKED DIAGNOSTICS ... CONSTRAINT_NAME` tells a duplicate username from a duplicate email. Concept: exception handling, error translation.
+- `fn_authenticate` (SQL, SECURITY DEFINER): `LEFT JOIN users` from a one-row table, so there is always exactly one row to run `crypt` on. When the username is unknown, `crypt` runs against a fixed dummy cost-10 hash, so a missing user takes as long as a wrong password. Concept: timing-safe login, SECURITY DEFINER so the app role never reads `password_hash`.
+- `fn_semver_satisfies` (PL/pgSQL, IMMUTABLE): pulls the digit groups out with `regexp_matches(..., '\d+', 'g')` into a `numeric[]`, pads both sides with zeros to the same length (at least 3), and compares the arrays. PostgreSQL compares arrays element by element, so `{1,10,0} > {1,9,0}`. The operator is read with `regexp_match`. Concept: array comparison.
+- `fn_check_loadout_compatibility` (one SQL function): CTE `lm` = enabled loadout rows with version, mod and loadout game version. CTE `deps` = every dependency of an `lm` version, `LEFT JOIN`ed to the loadout's version of the target mod (NULL when absent). CTE `pairs` = matrix rows with both versions in the loadout. Then one CTE per issue type reads from these three. They are combined with `UNION ALL` and ordered by severity, issue_type, message. `DECLARED_CONFLICT` uses `DISTINCT ON (least(a, b), greatest(a, b))` so a conflict declared from both sides is one row. `UNVERIFIED_PAIR` pairs `a.version_id < b.version_id` (the canonical matrix order from the Phase 1 trigger) and `LEFT JOIN`s the matrix. Concept: CTE pipeline, anti-join with LEFT JOIN ... IS NULL, DISTINCT ON.
+- `fn_loadout_health_score` (PL/pgSQL): NOT_FOUND for an unknown loadout, otherwise `count(*) FILTER (WHERE severity = ...)` over the check function. Concept: aggregate FILTER.
+- `fn_get_mod_dependency_tree`: `WITH RECURSIVE`. The anchor is the version at depth 0. Each step joins `mod_dependencies` (required, optional, recommends) to the primary version of the target mod and appends it to `path`. It stops when the next version is already in `path` or depth reaches 10. Concept: recursive CTE with cycle guard.
+- `fn_suggest_load_order`: builds the edges between loadout versions, then a recursive CTE walks every path from every version (the `path` array stops cycles). A version's depth is its longest walk. `ROW_NUMBER() OVER (ORDER BY depth, position, mod name) - 1` gives positions 0 to n-1. Concept: longest path by recursive CTE, window function.
+- `fn_mod_stats`: scalar subqueries for versions, dependent mods, and conflicts (declared conflicts in either direction plus incompatible matrix pairs).
+- `fn_search_mods_by_tag`: `GROUP BY mod_id HAVING count(DISTINCT slug) = number of slugs asked for`. Concept: relational division.
+- `fn_search_mods_hybrid`: CTE `sem` takes the 50 nearest embeddings (`ORDER BY embedding <=> p_embedding LIMIT 50`, which can use the HNSW index) and numbers them. CTE `kw` takes the 50 best `ts_rank_cd` matches of `websearch_to_tsquery`. `FULL OUTER JOIN` keeps mods found by either half. The score is the RRF sum `1/(60 + rank)` of both halves. Concept: Reciprocal Rank Fusion, FULL OUTER JOIN.
+
+### Decisions
+
+- `fn_semver_satisfies` and `fn_loadout_health_score` are PL/pgSQL, not SQL like their stubs. The language is not part of the signature. Semver needs several steps, and the score needs RAISE.
+- Semver uses `numeric[]` instead of `int[]` so a long build number cannot overflow. Both sides are padded to the same length, so `1.2.0.1` is not equal to `1.2.0`.
+- In `fn_search_mods_hybrid`, `ROW_NUMBER` is applied after `LIMIT 50` in an inner query. Numbering first would force a full sort of all mods and skip the HNSW index.
+- A blank query is passed to `websearch_to_tsquery` as NULL. An empty string works too, but prints a "no lexemes" NOTICE on every vector-only search.
+- `p_limit` NULL means 50, negative means 0, and above 50 is cut to 50.
+- `fn_mod_stats.dependent_count` counts distinct other mods with a non-conflict dependency. A conflict is not a dependent.
+- `UNVERIFIED_PAIR` skips two versions of the same mod in one loadout. That pair is not a compatibility question.
+- `DUPLICATE` says whether the username or the email is taken, so the sign-up form can point at the right field.
+
+### Assumptions
+
+- `database/functions.sql`, `fn_semver_satisfies`: a constraint with no digits (for example `>=abc`) is treated as satisfied.
+- `database/functions.sql`, `fn_check_loadout_compatibility`, CTE `version_constraint`: version constraints on `conflicts` rows are not checked.
+- `database/functions.sql`, `fn_suggest_load_order` header: disabled rows are ordered too, so `pr_apply_load_order` can renumber every row.
+
+### Checks
+
+- `psql ... -f database/tests/test_auth.sql`: exit 0, PASS 1 to 5 (18 semver cases).
+- `psql ... -f database/tests/test_health.sql`: exit 0, PASS 1 to 12.
+- `psql ... -f database/tests/test_graph.sql`: exit 0, PASS 1 to 7.
+- `psql ... -f database/tests/test_search.sql`: exit 0, PASS 1 to 4.
+- `psql ... -f database/tests/test_triggers.sql`: still exit 0, PASS 1 to 9.
+- Clean build: a scratch database got `run_all.sql`, `fixtures.sql` and all five test files. All exited 0, then the scratch database was dropped. (`db_reset.py` itself was not run this phase; see Open issues.)
+- Contract: a `pg_proc` dump of every `fn_` / `pr_` routine (name, arguments, result, SECURITY DEFINER) before and after the phase is identical, 29 routines.
+- Sync 1 has not landed (`seed.sql` is still comments only), so the real-seed health check was not run.
+
+### Open issues
+
+- `python scripts/db_reset.py` was not run during this phase. The clean build was checked in a scratch database instead. Run it once before committing.
+- `fn_suggest_load_order` walks every dependency path, which grows fast in dense graphs. Marked with a `shortcut:` comment. Fine for loadouts of tens of mods.
+- `UNVERIFIED_PAIR` gives n(n-1)/2 info rows for a loadout with no matrix data (780 for 40 mods). That is the spec rule. The UI should group or collapse info rows.
+- A query made only of stopwords (for example "the") still prints the "no lexemes" NOTICE. Harmless.
+
+### For the other person
+
+- Working now: `fn_register_user`, `fn_authenticate`, `fn_search_mods_hybrid`, `fn_search_mods_by_tag`, `fn_get_mod_dependency_tree`, `fn_mod_stats`, `fn_semver_satisfies`, `fn_check_loadout_compatibility`, `fn_loadout_health_score`, `fn_suggest_load_order`. Still stubs until Phase 3: `fn_export_loadout` and all `pr_` procedures.
+- `fn_register_user` errors: `MODVAULT:INVALID_INPUT: ...` (username, email or password) and `MODVAULT:DUPLICATE: username is already taken` / `MODVAULT:DUPLICATE: email is already registered`.
+- `fn_authenticate` returns zero rows for every failure, including inactive accounts. Show one generic "wrong username or password" message.
+- `fn_search_mods_hybrid`: pass a NULL embedding for keyword-only search, and a NULL or empty query for vector-only search. The limit is capped at 50. `semantic_rank` / `keyword_rank` are NULL when that half did not find the mod, so the "Meaning" / "Keyword" badges can key on them.
+- `fn_loadout_health_score` raises `MODVAULT:NOT_FOUND` for an unknown loadout. `fn_check_loadout_compatibility` returns zero rows instead.
+- There can be many info rows (`UNVERIFIED_PAIR`). Collapse them in the UI.
