@@ -50,7 +50,7 @@ jobs:
       - name: Client and server versions
         run: |
           psql --version
-          psql -X "$DATABASE_URL" -At -c "SHOW server_version;" -c "SELECT extversion FROM pg_available_extensions WHERE name = 'vector';"
+          psql -X "$DATABASE_URL" -At -c "SHOW server_version;" -c "SELECT default_version FROM pg_available_extensions WHERE name = 'vector';"
 
       - name: Build schema and seed (db_reset.py)
         run: python scripts/db_reset.py
