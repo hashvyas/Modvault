@@ -1,0 +1,158 @@
+- name: User Interface
+  slug: user-interface
+  mods:
+    - skyrimspecialedition:12604
+    - skyrimspecialedition:19080
+    - skyrimspecialedition:1429
+    - skyrimspecialedition:5804
+    - skyrimspecialedition:53000
+    - fallout4:21497
+    - fallout4:1235
+    - stardewvalley:5098
+    - stardewvalley:541
+    - stardewvalley:4
+    - stardewvalley:93
+    - stardewvalley:239
+
+- name: Bug Fixes
+  slug: bug-fixes
+  mods:
+    - skyrimspecialedition:266
+    - skyrimspecialedition:17230
+    - fallout4:4598
+
+- name: Utilities
+  slug: utilities
+  mods:
+    - skyrimspecialedition:12604
+    - skyrimspecialedition:32444
+    - skyrimspecialedition:17230
+    - skyrimspecialedition:13048
+    - skyrimspecialedition:53000
+    - fallout4:42147
+    - fallout4:21497
+    - fallout4:9424
+    - fallout4:5320
+    - stardewvalley:2400
+    - stardewvalley:1915
+    - stardewvalley:5098
+    - stardewvalley:541
+    - stardewvalley:1348
+    - stardewvalley:963
+
+- name: Frameworks
+  slug: frameworks
+  mods:
+    - skyrimspecialedition:32444
+    - skyrimspecialedition:13048
+    - fallout4:42147
+    - fallout4:6091
+    - fallout4:35004
+    - stardewvalley:2400
+    - stardewvalley:1915
+    - stardewvalley:1348
+    - stardewvalley:6529
+    - stardewvalley:3231
+
+- name: Gameplay
+  slug: gameplay
+  mods:
+    - skyrimspecialedition:266
+    - skyrimspecialedition:272
+    - skyrimspecialedition:1137
+    - skyrimspecialedition:1090
+    - fallout4:4598
+    - fallout4:18946
+    - stardewvalley:1063
+    - stardewvalley:1401
+    - stardewvalley:3231
+    - stardewvalley:963
+
+- name: Overhaul
+  slug: overhaul
+  mods:
+    - skyrimspecialedition:1137
+    - fallout4:2228
+    - fallout4:47976
+    - stardewvalley:3753
+
+- name: Visuals & Graphics
+  slug: visuals-graphics
+  mods:
+    - skyrimspecialedition:659
+    - fallout4:4472
+    - fallout4:25714
+    - stardewvalley:5255
+
+- name: Immersion
+  slug: immersion
+  mods:
+    - skyrimspecialedition:659
+    - skyrimspecialedition:272
+    - skyrimspecialedition:667
+    - skyrimspecialedition:671
+    - fallout4:18946
+    - fallout4:4472
+    - fallout4:4772
+    - stardewvalley:3753
+
+- name: Survival
+  slug: survival
+  mods:
+    - skyrimspecialedition:667
+    - skyrimspecialedition:671
+
+- name: Settlements
+  slug: settlements
+  mods:
+    - fallout4:9424
+    - fallout4:35004
+    - fallout4:47976
+    - fallout4:5320
+    - fallout4:4772
+
+- name: Armor & Clothing
+  slug: armor-clothing
+  mods:
+    - fallout4:6091
+    - fallout4:2228
+
+- name: Magic & Spells
+  slug: magic-spells
+  mods:
+    - skyrimspecialedition:1090
+
+- name: Character Customization
+  slug: character-customization
+  mods:
+    - skyrimspecialedition:19080
+    - fallout4:15
+
+- name: Dialogue
+  slug: dialogue
+  mods:
+    - fallout4:1235
+
+- name: Quests
+  slug: quests
+  mods:
+    - fallout4:47976
+    - stardewvalley:3753
+
+- name: Automation
+  slug: automation
+  mods:
+    - stardewvalley:1063
+    - stardewvalley:1401
+
+- name: Cheats
+  slug: cheats
+  mods:
+    - stardewvalley:4
+    - stardewvalley:93
+
+- name: Maps & Navigation
+  slug: maps-navigation
+  mods:
+    - skyrimspecialedition:5804
+    - stardewvalley:239
