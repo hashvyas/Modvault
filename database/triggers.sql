@@ -11,13 +11,13 @@
 --   functions to tables.
 --
 --   Demonstrated features:
---     * BEFORE INSERT / UPDATE / DELETE row-level triggers
+--     * BEFORE INSERT / UPDATE row-level triggers that rewrite NEW
+--     * BEFORE UPDATE OF <column> triggers
 --     * AFTER INSERT / UPDATE / DELETE row-level triggers
---     * AFTER INSERT / UPDATE / DELETE statement-level triggers
---     * INSTEAD OF triggers on views (for updatable view emulation)
---     * Triggers that enforce data-integrity rules (e.g. pair canonicalisation)
---     * Triggers that maintain denormalised / cached data automatically
---     * Triggers that log audit events
+--     * Triggers that enforce data-integrity rules (pair canonicalisation,
+--       single primary version, same-game loadouts, append-only audit log)
+--     * Triggers that maintain denormalised / cached data (rating rollup)
+--     * One generic trigger function reused across tables via TG_ARGV
 --
 -- DEPENDENCY
 --   Included by database/run_all.sql, after functions.sql.
@@ -33,127 +33,120 @@ SET client_encoding = 'UTF8';
 -- =============================================================================
 -- SECTION 1 -- COMPATIBILITY MATRIX: PAIR CANONICALISATION
 --
--- Trigger: trg_compat_canonicalise_pair
--- Timing:  BEFORE INSERT OR UPDATE ON compatibility_matrix
--- Level:   ROW
--- Function: fn_compat_canonicalise_pair()  (defined in functions.sql)
---
--- Purpose:
---   Enforces the rule that version_a_id must always be the lexicographically
---   smaller UUID so that (A, B) and (B, A) are never stored as separate rows.
---   If an INSERT or UPDATE arrives with version_a_id > version_b_id, the
---   trigger swaps the two values before the row is written.
---
--- Why a trigger (not a CHECK constraint):
---   A CHECK constraint cannot swap column values; it can only reject the row.
---   The trigger silently normalises the pair, providing a better UX.
+-- Swaps version_a_id / version_b_id when A > B, so (A, B) and (B, A) are the
+-- same row. A CHECK constraint could only reject the row, not fix it.
 -- =============================================================================
 
--- (CREATE TRIGGER trg_compat_canonicalise_pair ... will be added here)
+CREATE TRIGGER trg_compat_canonicalise_pair
+    BEFORE INSERT OR UPDATE ON compatibility_matrix
+    FOR EACH ROW EXECUTE FUNCTION fn_compat_canonicalise_pair();
 
 
 -- =============================================================================
--- SECTION 2 -- MOD VERSIONS: PRIMARY VERSION ENFORCEMENT
+-- SECTION 2 -- MOD VERSIONS: SINGLE PRIMARY VERSION
 --
--- Trigger: trg_mod_version_single_primary
--- Timing:  BEFORE INSERT OR UPDATE ON mod_versions
--- Level:   ROW
--- Function: fn_mod_version_single_primary()  (defined in functions.sql)
---
--- Purpose:
---   Ensures that at most one version per mod has is_primary = TRUE.
---   When a new version is inserted / updated with is_primary = TRUE, the
---   trigger first sets is_primary = FALSE on all other versions of that mod,
---   then allows the new row to be written as TRUE.
---
--- Why a trigger (not a UNIQUE constraint):
---   A UNIQUE constraint on (mod_id) WHERE is_primary = TRUE would work for
---   simple cases, but the trigger additionally handles the UPDATE path
---   (demoting old primary) atomically in one operation.
+-- When a version becomes primary, the other versions of the mod are demoted
+-- first. uq_mod_versions_one_primary (indexes.sql) is the hard backstop.
 -- =============================================================================
 
--- (CREATE TRIGGER trg_mod_version_single_primary ... will be added here)
+CREATE TRIGGER trg_mod_version_single_primary
+    BEFORE INSERT OR UPDATE OF is_primary ON mod_versions
+    FOR EACH ROW EXECUTE FUNCTION fn_mod_version_single_primary();
 
 
 -- =============================================================================
--- SECTION 3 -- REVIEWS: MATERIALIZED VIEW REFRESH
+-- SECTION 3 -- UPDATED_AT TIMESTAMP MAINTENANCE
 --
--- Trigger: trg_refresh_mv_mod_ratings
--- Timing:  AFTER INSERT OR UPDATE OR DELETE ON reviews
--- Level:   STATEMENT
--- Function: fn_refresh_mv_mod_ratings()  (defined in functions.sql)
---
--- Purpose:
---   Automatically refreshes the mv_mod_ratings materialized view whenever
---   a review is inserted, updated, or deleted.  This keeps the cached
---   aggregate ratings current without requiring manual REFRESH calls.
---
--- Trade-off note (documented for demonstration):
---   REFRESH MATERIALIZED VIEW acquires an exclusive lock.  For high-traffic
---   production deployments, REFRESH ... CONCURRENTLY is preferred but
---   requires a unique index on the materialized view.  The trigger will be
---   implemented with CONCURRENTLY and a suitable fallback.
+-- One generic function, fn_set_updated_at, on every table with updated_at.
 -- =============================================================================
 
--- (CREATE TRIGGER trg_refresh_mv_mod_ratings ... will be added here)
+CREATE TRIGGER trg_users_updated_at
+    BEFORE UPDATE ON users
+    FOR EACH ROW EXECUTE FUNCTION fn_set_updated_at();
 
+CREATE TRIGGER trg_mods_updated_at
+    BEFORE UPDATE ON mods
+    FOR EACH ROW EXECUTE FUNCTION fn_set_updated_at();
 
--- =============================================================================
--- SECTION 4 -- MODS: UPDATED_AT TIMESTAMP MAINTENANCE
---
--- Trigger: trg_mods_updated_at
--- Timing:  BEFORE UPDATE ON mods
--- Level:   ROW
--- Function: fn_set_updated_at()  (generic function defined in functions.sql)
---
--- Purpose:
---   Automatically sets an updated_at column to NOW() on every UPDATE.
---   (The updated_at column is defined on mods in schema.sql.)
---   The same generic function is reused for any other table that gains
---   an updated_at column.
--- =============================================================================
+CREATE TRIGGER trg_loadouts_updated_at
+    BEFORE UPDATE ON loadouts
+    FOR EACH ROW EXECUTE FUNCTION fn_set_updated_at();
 
--- (CREATE TRIGGER trg_mods_updated_at ... will be added here)
+CREATE TRIGGER trg_compatibility_matrix_updated_at
+    BEFORE UPDATE ON compatibility_matrix
+    FOR EACH ROW EXECUTE FUNCTION fn_set_updated_at();
 
 
 -- =============================================================================
--- SECTION 5 -- LOADOUT MODS: POSITION GAP PREVENTION
+-- SECTION 4 -- LOADOUT MODS: AUTO POSITION AND GAME CHECK
 --
--- Trigger: trg_loadout_mods_position
--- Timing:  BEFORE INSERT OR UPDATE ON loadout_mods
--- Level:   ROW
--- Function: fn_loadout_mods_auto_position()  (defined in functions.sql)
---
--- Purpose:
---   When a new mod is added to a loadout without an explicit position, the
---   trigger assigns it the next sequential position value (MAX(position)+1)
---   within that loadout automatically.  This prevents gaps in the ordering
---   and removes the burden from the application layer.
+-- trg_loadout_mods_position:   position 0 on insert means "append at the end".
+-- trg_loadout_mods_game_check: raises GAME_MISMATCH when the version's mod is
+--                              for a different game than the loadout.
+-- BEFORE triggers on one event fire in name order: game check, then position.
 -- =============================================================================
 
--- (CREATE TRIGGER trg_loadout_mods_position ... will be added here)
+CREATE TRIGGER trg_loadout_mods_position
+    BEFORE INSERT ON loadout_mods
+    FOR EACH ROW EXECUTE FUNCTION fn_loadout_mods_auto_position();
+
+CREATE TRIGGER trg_loadout_mods_game_check
+    BEFORE INSERT OR UPDATE ON loadout_mods
+    FOR EACH ROW EXECUTE FUNCTION fn_loadout_mods_game_check();
 
 
 -- =============================================================================
--- SECTION 6 -- AUDIT LOG TRIGGER (all sensitive tables)
+-- SECTION 5 -- REVIEWS: RATING ROLLUP
 --
--- Trigger: trg_audit_<table>
--- Timing:  AFTER INSERT OR UPDATE OR DELETE ON <table>
--- Level:   ROW
--- Function: fn_audit_log()  (defined in functions.sql)
---
--- Purpose:
---   Writes a row to an audit_log table (created in functions.sql or a
---   separate migration) for every INSERT, UPDATE, or DELETE on sensitive
---   tables: users, mods, compatibility_matrix.
---   The audit log captures: table_name, operation, old_row (JSONB),
---   new_row (JSONB), changed_at (TIMESTAMPTZ), changed_by (current_user).
---
--- Tables to audit:
---   users, mods, compatibility_matrix
+-- Keeps mods.rating_avg and mods.rating_count in step with reviews, for the
+-- affected mods only. Replaces the old plan of refreshing a ratings
+-- materialized view on every review.
 -- =============================================================================
 
--- (CREATE TRIGGER trg_audit_users ...)
--- (CREATE TRIGGER trg_audit_mods ...)
--- (CREATE TRIGGER trg_audit_compat ...)
--- (Trigger statements will be added here)
+CREATE TRIGGER trg_reviews_rating_rollup
+    AFTER INSERT OR UPDATE OR DELETE ON reviews
+    FOR EACH ROW EXECUTE FUNCTION fn_reviews_rating_rollup();
+
+
+-- =============================================================================
+-- SECTION 6 -- AUDIT LOG
+--
+-- fn_audit_log(<primary key column>) writes one audit_log row per changed row.
+-- trg_audit_log_immutable makes audit_log append-only.
+-- =============================================================================
+
+CREATE TRIGGER trg_audit_users
+    AFTER INSERT OR UPDATE OR DELETE ON users
+    FOR EACH ROW EXECUTE FUNCTION fn_audit_log('user_id');
+
+CREATE TRIGGER trg_audit_mods
+    AFTER INSERT OR UPDATE OR DELETE ON mods
+    FOR EACH ROW EXECUTE FUNCTION fn_audit_log('mod_id');
+
+CREATE TRIGGER trg_audit_mod_versions
+    AFTER INSERT OR UPDATE OR DELETE ON mod_versions
+    FOR EACH ROW EXECUTE FUNCTION fn_audit_log('version_id');
+
+CREATE TRIGGER trg_audit_mod_dependencies
+    AFTER INSERT OR UPDATE OR DELETE ON mod_dependencies
+    FOR EACH ROW EXECUTE FUNCTION fn_audit_log('dep_id');
+
+CREATE TRIGGER trg_audit_compatibility_matrix
+    AFTER INSERT OR UPDATE OR DELETE ON compatibility_matrix
+    FOR EACH ROW EXECUTE FUNCTION fn_audit_log('compat_id');
+
+CREATE TRIGGER trg_audit_loadouts
+    AFTER INSERT OR UPDATE OR DELETE ON loadouts
+    FOR EACH ROW EXECUTE FUNCTION fn_audit_log('loadout_id');
+
+CREATE TRIGGER trg_audit_loadout_mods
+    AFTER INSERT OR UPDATE OR DELETE ON loadout_mods
+    FOR EACH ROW EXECUTE FUNCTION fn_audit_log('id');
+
+CREATE TRIGGER trg_audit_reviews
+    AFTER INSERT OR UPDATE OR DELETE ON reviews
+    FOR EACH ROW EXECUTE FUNCTION fn_audit_log('review_id');
+
+CREATE TRIGGER trg_audit_log_immutable
+    BEFORE UPDATE OR DELETE ON audit_log
+    FOR EACH ROW EXECUTE FUNCTION fn_audit_log_immutable();
