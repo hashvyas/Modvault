@@ -746,87 +746,339 @@ AS $$
     ORDER  BY 2
 $$;
 
+-- -----------------------------------------------------------------------------
+-- fn_export_loadout(loadout_id)  RETURNS jsonb
+-- The loadout as a manifest (contract section 6.7), mods ordered by position.
+-- An unknown or invisible loadout gives NULL.
+-- A mod published on ModVault has no nexus_mod_id; its entry exports with a
+-- NULL nexus_mod_id and pr_import_loadout skips it.
+-- -----------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION fn_export_loadout(p_loadout_id uuid)
 RETURNS jsonb
 LANGUAGE sql STABLE
-AS $$ SELECT '{}'::jsonb $$;
+AS $$
+    SELECT jsonb_build_object(
+               'format',       'modvault-loadout/1',
+               'name',         l.name,
+               'description',  l.description,
+               'game_domain',  g.domain,
+               'game_version', l.game_version,
+               'mods', coalesce((
+                   SELECT jsonb_agg(jsonb_build_object(
+                              'nexus_mod_id', m.nexus_mod_id,
+                              'semver',       v.semver,
+                              'position',     x.position,
+                              'enabled',      x.enabled)
+                          ORDER BY x.position, m.name, v.version_id)
+                   FROM   loadout_mods x
+                   JOIN   mod_versions v ON v.version_id = x.version_id
+                   JOIN   mods m         ON m.mod_id = v.mod_id
+                   WHERE  x.loadout_id = l.loadout_id), '[]'::jsonb))
+    FROM   loadouts l
+    JOIN   games g ON g.game_id = l.game_id
+    WHERE  l.loadout_id = p_loadout_id
+$$;
 
 
 -- =============================================================================
 -- SECTION 7 -- STORED PROCEDURES
+-- No procedure runs COMMIT or ROLLBACK. The caller owns the transaction.
 -- =============================================================================
 
+-- -----------------------------------------------------------------------------
+-- pr_publish_mod(game, name, summary, category, semver, tags, embedding, INOUT mod_id)
+-- A logged-in user publishes a mod: the mod row (author = current user), one
+-- primary version, and its tags by slug (missing tags are created).
+-- ASSUMPTION: a new tag gets its slug as its name. A slug whose name is
+-- already taken by a different tag is skipped, not an error.
+-- -----------------------------------------------------------------------------
 CREATE OR REPLACE PROCEDURE pr_publish_mod(p_game_id uuid, p_name text, p_summary text, p_category text,
                                            p_semver text, p_tags text[], p_embedding vector(384),
                                            INOUT p_mod_id uuid DEFAULT NULL)
 LANGUAGE plpgsql
 AS $$
+DECLARE
+    v_tags text[];
 BEGIN
-    NULL;
+    IF fn_current_user_id() IS NULL THEN
+        RAISE EXCEPTION USING ERRCODE = 'P0001',
+            MESSAGE = 'MODVAULT:FORBIDDEN: log in to publish a mod';
+    END IF;
+    IF coalesce(trim(p_name), '') = '' OR coalesce(trim(p_semver), '') = '' THEN
+        RAISE EXCEPTION USING ERRCODE = 'P0001',
+            MESSAGE = 'MODVAULT:INVALID_INPUT: name and version are required';
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM games WHERE game_id = p_game_id) THEN
+        RAISE EXCEPTION USING ERRCODE = 'P0001',
+            MESSAGE = 'MODVAULT:NOT_FOUND: game not found';
+    END IF;
+
+    INSERT INTO mods (author_id, game_id, name, summary, category, embedding)
+    VALUES (fn_current_user_id(), p_game_id, trim(p_name), p_summary, p_category, p_embedding)
+    RETURNING mod_id INTO p_mod_id;
+
+    INSERT INTO mod_versions (mod_id, semver, is_primary)
+    VALUES (p_mod_id, trim(p_semver), TRUE);
+
+    v_tags := ARRAY(SELECT DISTINCT trim(t) FROM unnest(p_tags) AS t WHERE coalesce(trim(t), '') <> '');
+
+    INSERT INTO tags (name, slug)
+    SELECT t, t FROM unnest(v_tags) AS t
+    ON CONFLICT DO NOTHING;
+
+    INSERT INTO mod_tags (mod_id, tag_id)
+    SELECT p_mod_id, tag_id FROM tags WHERE slug = ANY (v_tags);
 END;
 $$;
 
+-- -----------------------------------------------------------------------------
+-- pr_add_mod_to_loadout(loadout_id, version_id)
+-- Adds a version to a loadout the caller owns. When another version of the
+-- same mod is already there, that row switches version in place and keeps
+-- its position. A game mismatch is raised by trg_loadout_mods_game_check.
+-- ASSUMPTION: a visible loadout owned by someone else (a public one) raises
+-- FORBIDDEN, instead of the raw RLS error the insert would hit.
+-- -----------------------------------------------------------------------------
 CREATE OR REPLACE PROCEDURE pr_add_mod_to_loadout(p_loadout_id uuid, p_version_id uuid)
 LANGUAGE plpgsql
 AS $$
+DECLARE
+    v_owner uuid;
 BEGIN
-    NULL;
+    SELECT user_id INTO v_owner FROM loadouts WHERE loadout_id = p_loadout_id;
+    IF NOT FOUND THEN
+        RAISE EXCEPTION USING ERRCODE = 'P0001',
+            MESSAGE = 'MODVAULT:NOT_FOUND: loadout not found';
+    END IF;
+    IF v_owner IS DISTINCT FROM fn_current_user_id() THEN
+        RAISE EXCEPTION USING ERRCODE = 'P0001',
+            MESSAGE = 'MODVAULT:FORBIDDEN: only the owner can change this loadout';
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM mod_versions WHERE version_id = p_version_id) THEN
+        RAISE EXCEPTION USING ERRCODE = 'P0001',
+            MESSAGE = 'MODVAULT:NOT_FOUND: mod version not found';
+    END IF;
+    IF EXISTS (SELECT 1 FROM loadout_mods WHERE loadout_id = p_loadout_id AND version_id = p_version_id) THEN
+        RETURN;
+    END IF;
+
+    UPDATE loadout_mods x
+    SET    version_id = p_version_id
+    FROM   mod_versions cur, mod_versions new
+    WHERE  x.loadout_id = p_loadout_id
+      AND  cur.version_id = x.version_id
+      AND  new.version_id = p_version_id
+      AND  cur.mod_id = new.mod_id;
+
+    IF NOT FOUND THEN
+        -- position 0 means "append" (trg_loadout_mods_position).
+        INSERT INTO loadout_mods (loadout_id, version_id) VALUES (p_loadout_id, p_version_id);
+    END IF;
 END;
 $$;
 
+-- -----------------------------------------------------------------------------
+-- pr_apply_load_order(loadout_id)
+-- Writes fn_suggest_load_order back to loadout_mods in one UPDATE.
+-- -----------------------------------------------------------------------------
 CREATE OR REPLACE PROCEDURE pr_apply_load_order(p_loadout_id uuid)
 LANGUAGE plpgsql
 AS $$
 BEGIN
-    NULL;
+    UPDATE loadout_mods x
+    SET    position = s.suggested_position
+    FROM   fn_suggest_load_order(p_loadout_id) s
+    WHERE  x.loadout_id = p_loadout_id
+      AND  x.version_id = s.version_id
+      AND  x.position <> s.suggested_position;
 END;
 $$;
 
+-- -----------------------------------------------------------------------------
+-- pr_import_loadout(manifest, INOUT loadout_id, INOUT skipped)
+-- Creates a loadout for the current user from a manifest (contract section
+-- 6.7). Each mod entry runs in its own BEGIN ... EXCEPTION block (a
+-- subtransaction / savepoint): an unresolved or failing entry is counted in
+-- p_skipped and the rest of the import goes on.
+-- ASSUMPTION: an unknown game domain, a missing name or a non-array "mods"
+-- is an INVALID_MANIFEST, like a wrong format.
+-- -----------------------------------------------------------------------------
 CREATE OR REPLACE PROCEDURE pr_import_loadout(p_manifest jsonb,
                                               INOUT p_loadout_id uuid DEFAULT NULL,
                                               INOUT p_skipped int DEFAULT NULL)
 LANGUAGE plpgsql
 AS $$
+DECLARE
+    v_game_id    uuid;
+    v_mod_id     uuid;
+    v_version_id uuid;
+    v_entry      jsonb;
 BEGIN
-    NULL;
+    IF fn_current_user_id() IS NULL THEN
+        RAISE EXCEPTION USING ERRCODE = 'P0001',
+            MESSAGE = 'MODVAULT:FORBIDDEN: log in to import a loadout';
+    END IF;
+    IF p_manifest ->> 'format' IS DISTINCT FROM 'modvault-loadout/1' THEN
+        RAISE EXCEPTION USING ERRCODE = 'P0001',
+            MESSAGE = 'MODVAULT:INVALID_MANIFEST: format must be modvault-loadout/1';
+    END IF;
+    IF coalesce(trim(p_manifest ->> 'name'), '') = '' OR jsonb_typeof(p_manifest -> 'mods') IS DISTINCT FROM 'array' THEN
+        RAISE EXCEPTION USING ERRCODE = 'P0001',
+            MESSAGE = 'MODVAULT:INVALID_MANIFEST: name and a mods array are required';
+    END IF;
+
+    SELECT game_id INTO v_game_id FROM games WHERE domain = p_manifest ->> 'game_domain';
+    IF NOT FOUND THEN
+        RAISE EXCEPTION USING ERRCODE = 'P0001',
+            MESSAGE = format('MODVAULT:INVALID_MANIFEST: unknown game %s', coalesce(p_manifest ->> 'game_domain', '(none)'));
+    END IF;
+
+    INSERT INTO loadouts (user_id, game_id, name, description, game_version)
+    VALUES (fn_current_user_id(), v_game_id, trim(p_manifest ->> 'name'),
+            p_manifest ->> 'description', p_manifest ->> 'game_version')
+    RETURNING loadout_id INTO p_loadout_id;
+
+    p_skipped := 0;
+
+    -- Lowest position first, so an entry at position 0 is never mistaken for "append".
+    FOR v_entry IN
+        SELECT e FROM jsonb_array_elements(p_manifest -> 'mods') WITH ORDINALITY AS t(e, o)
+        ORDER  BY CASE WHEN jsonb_typeof(e -> 'position') = 'number' THEN (e ->> 'position')::numeric END NULLS LAST, o
+    LOOP
+        BEGIN
+            v_mod_id := NULL;
+            v_version_id := NULL;
+
+            SELECT mod_id INTO v_mod_id
+            FROM   mods
+            WHERE  game_id = v_game_id AND nexus_mod_id = v_entry ->> 'nexus_mod_id';
+
+            SELECT version_id INTO v_version_id
+            FROM   mod_versions
+            WHERE  mod_id = v_mod_id AND (semver = v_entry ->> 'semver' OR is_primary)
+            ORDER  BY (semver = v_entry ->> 'semver') DESC
+            LIMIT  1;
+
+            IF v_version_id IS NULL THEN
+                p_skipped := p_skipped + 1;
+                CONTINUE;
+            END IF;
+
+            INSERT INTO loadout_mods (loadout_id, version_id, position, enabled)
+            VALUES (p_loadout_id, v_version_id,
+                    coalesce((v_entry ->> 'position')::int, 0),
+                    coalesce((v_entry ->> 'enabled')::boolean, TRUE));
+        EXCEPTION WHEN others THEN
+            p_skipped := p_skipped + 1;
+        END;
+    END LOOP;
 END;
 $$;
 
+-- -----------------------------------------------------------------------------
+-- pr_promote_version(version_id)
+-- Makes a version the primary one of its mod. SELECT ... FOR UPDATE locks
+-- every version of the mod first, so two concurrent promotions run one after
+-- the other. trg_mod_version_single_primary demotes the old primary.
+-- Curators and admins only.
+-- -----------------------------------------------------------------------------
 CREATE OR REPLACE PROCEDURE pr_promote_version(p_version_id uuid)
 LANGUAGE plpgsql
 AS $$
+DECLARE
+    v_mod_id uuid;
 BEGIN
-    NULL;
+    IF fn_current_role() NOT IN ('curator', 'admin') THEN
+        RAISE EXCEPTION USING ERRCODE = 'P0001',
+            MESSAGE = 'MODVAULT:FORBIDDEN: only curators and admins can promote a version';
+    END IF;
+
+    SELECT mod_id INTO v_mod_id FROM mod_versions WHERE version_id = p_version_id;
+    IF NOT FOUND THEN
+        RAISE EXCEPTION USING ERRCODE = 'P0001',
+            MESSAGE = 'MODVAULT:NOT_FOUND: mod version not found';
+    END IF;
+
+    PERFORM 1 FROM mod_versions WHERE mod_id = v_mod_id FOR UPDATE;
+
+    UPDATE mod_versions SET is_primary = TRUE WHERE version_id = p_version_id AND NOT is_primary;
 END;
 $$;
 
+-- -----------------------------------------------------------------------------
+-- pr_upsert_compatibility(version_a, version_b, status, detail)
+-- Curators and admins record how two versions work together. The pair is put
+-- in canonical order (lower UUID first, as trg_compat_canonicalise_pair does)
+-- so ON CONFLICT matches the stored row.
+-- -----------------------------------------------------------------------------
 CREATE OR REPLACE PROCEDURE pr_upsert_compatibility(p_version_a uuid, p_version_b uuid,
                                                     p_status compat_status_enum, p_detail jsonb)
 LANGUAGE plpgsql
 AS $$
 BEGIN
-    NULL;
+    IF fn_current_role() NOT IN ('curator', 'admin') THEN
+        RAISE EXCEPTION USING ERRCODE = 'P0001',
+            MESSAGE = 'MODVAULT:FORBIDDEN: only curators and admins can record compatibility';
+    END IF;
+    IF p_version_a IS NULL OR p_version_b IS NULL OR p_version_a = p_version_b OR p_status IS NULL THEN
+        RAISE EXCEPTION USING ERRCODE = 'P0001',
+            MESSAGE = 'MODVAULT:INVALID_INPUT: two different versions and a status are required';
+    END IF;
+
+    INSERT INTO compatibility_matrix (version_a_id, version_b_id, status, conflict_detail, verified_by)
+    VALUES (least(p_version_a, p_version_b), greatest(p_version_a, p_version_b),
+            p_status, p_detail, fn_current_user_id())
+    ON CONFLICT (version_a_id, version_b_id) DO UPDATE
+    SET    status          = EXCLUDED.status,
+           conflict_detail = EXCLUDED.conflict_detail,
+           verified_by     = EXCLUDED.verified_by;
 END;
 $$;
 
--- Admin only.
+-- -----------------------------------------------------------------------------
+-- pr_set_user_role(user_id, role)  Admin only.
+-- SECURITY DEFINER because modvault_app has no UPDATE right on users.
+-- -----------------------------------------------------------------------------
 CREATE OR REPLACE PROCEDURE pr_set_user_role(p_user_id uuid, p_role user_role_enum)
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = public, pg_temp
 AS $$
 BEGIN
-    NULL;
+    IF fn_current_role() <> 'admin' THEN
+        RAISE EXCEPTION USING ERRCODE = 'P0001',
+            MESSAGE = 'MODVAULT:FORBIDDEN: only admins can change roles';
+    END IF;
+    IF p_role IS NULL THEN
+        RAISE EXCEPTION USING ERRCODE = 'P0001',
+            MESSAGE = 'MODVAULT:INVALID_INPUT: role is required';
+    END IF;
+
+    UPDATE users SET role = p_role WHERE user_id = p_user_id;
+    IF NOT FOUND THEN
+        RAISE EXCEPTION USING ERRCODE = 'P0001',
+            MESSAGE = 'MODVAULT:NOT_FOUND: user not found';
+    END IF;
 END;
 $$;
 
--- Admin only.
+-- -----------------------------------------------------------------------------
+-- pr_refresh_reports()  Admin only.
+-- CONCURRENTLY keeps the leaderboard readable during the refresh (needs the
+-- unique index uq_mv_game_leaderboard_game_mod). SECURITY DEFINER because only
+-- the owner of a materialized view may refresh it.
+-- -----------------------------------------------------------------------------
 CREATE OR REPLACE PROCEDURE pr_refresh_reports()
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = public, pg_temp
 AS $$
 BEGIN
-    NULL;
+    IF fn_current_role() <> 'admin' THEN
+        RAISE EXCEPTION USING ERRCODE = 'P0001',
+            MESSAGE = 'MODVAULT:FORBIDDEN: only admins can refresh reports';
+    END IF;
+
+    REFRESH MATERIALIZED VIEW CONCURRENTLY mv_game_leaderboard;
 END;
 $$;
