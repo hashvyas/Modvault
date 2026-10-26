@@ -462,8 +462,10 @@ $$;
 -- -----------------------------------------------------------------------------
 -- fn_mod_stats(mod_id)  One row for a known mod, zero rows otherwise.
 --   dependent_count: distinct other mods with a non-conflict dependency on it.
---   conflict_count:  declared conflicts in either direction + incompatible
---                    matrix pairs touching any version of the mod.
+--   conflict_count:  distinct other mods that conflict with it, through a
+--                    declared conflict in either direction or an incompatible
+--                    matrix pair touching any version of the mod. Counted per
+--                    mod, because dependency rows repeat for every version.
 -- -----------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION fn_mod_stats(p_mod_id uuid)
 RETURNS TABLE(version_count int, dependent_count int, conflict_count int,
@@ -477,18 +479,22 @@ AS $$
             WHERE  d.required_mod_id = m.mod_id
               AND  d.dep_type <> 'conflicts'
               AND  dv.mod_id <> m.mod_id)::int,
-           ((SELECT count(*)
-             FROM   mod_dependencies d
-             JOIN   mod_versions dv ON dv.version_id = d.dependent_version_id
-             WHERE  d.dep_type = 'conflicts'
-               AND  (d.required_mod_id = m.mod_id OR dv.mod_id = m.mod_id))
-            +
-            (SELECT count(*)
-             FROM   compatibility_matrix c
-             JOIN   mod_versions va ON va.version_id = c.version_a_id
-             JOIN   mod_versions vb ON vb.version_id = c.version_b_id
-             WHERE  c.status = 'incompatible'
-               AND  m.mod_id IN (va.mod_id, vb.mod_id)))::int,
+           (SELECT count(DISTINCT x.other_mod)
+            FROM (
+                SELECT CASE WHEN dv.mod_id = m.mod_id THEN d.required_mod_id ELSE dv.mod_id END AS other_mod
+                FROM   mod_dependencies d
+                JOIN   mod_versions dv ON dv.version_id = d.dependent_version_id
+                WHERE  d.dep_type = 'conflicts'
+                  AND  (d.required_mod_id = m.mod_id OR dv.mod_id = m.mod_id)
+                UNION ALL
+                SELECT CASE WHEN va.mod_id = m.mod_id THEN vb.mod_id ELSE va.mod_id END
+                FROM   compatibility_matrix c
+                JOIN   mod_versions va ON va.version_id = c.version_a_id
+                JOIN   mod_versions vb ON vb.version_id = c.version_b_id
+                WHERE  c.status = 'incompatible'
+                  AND  m.mod_id IN (va.mod_id, vb.mod_id)
+            ) x
+            WHERE  x.other_mod <> m.mod_id)::int,
            m.rating_avg::numeric, m.rating_count, m.download_count
     FROM   mods m
     WHERE  m.mod_id = p_mod_id
