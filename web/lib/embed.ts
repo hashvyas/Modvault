@@ -1,4 +1,12 @@
-import { pipeline } from '@huggingface/transformers';
+import { env, pipeline } from '@huggingface/transformers';
+import path from 'path';
+
+// Configure cache directory if specified via environment variable
+if (process.env.TRANSFORMERS_CACHE) {
+  env.cacheDir = process.env.TRANSFORMERS_CACHE;
+} else if (process.env.HF_HOME) {
+  env.cacheDir = path.join(process.env.HF_HOME, 'hub');
+}
 
 // Module-level singleton pipeline promise
 // ASSUMPTION: Pipeline promise is cached at module scope across calls in the server runtime.
