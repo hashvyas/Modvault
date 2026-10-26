@@ -139,12 +139,13 @@ DO $$
 DECLARE
     s record;
 BEGIN
-    -- SkyUI: 2 versions, nobody depends on it, conflicts: declares c4 (1) + incompatible with d5 (1).
+    -- SkyUI: 2 versions, nobody depends on it. Declares a conflict with c4 and is
+    -- incompatible with d5, a version of c4: one conflicting mod.
     SELECT * INTO s FROM fn_mod_stats('c0000000-0000-0000-0000-000000000002');
-    ASSERT s.version_count = 2 AND s.dependent_count = 0 AND s.conflict_count = 2, 'SkyUI stats wrong';
-    -- Alternate UI: conflict declared against it (1) + incompatible with d2 (1).
+    ASSERT s.version_count = 2 AND s.dependent_count = 0 AND s.conflict_count = 1, 'SkyUI stats wrong';
+    -- Alternate UI: the same single partner (SkyUI) seen from the other side.
     SELECT * INTO s FROM fn_mod_stats('c0000000-0000-0000-0000-000000000004');
-    ASSERT s.conflict_count = 2, 'Alternate UI conflict_count wrong';
+    ASSERT s.conflict_count = 1, 'Alternate UI conflict_count wrong';
     -- Script Extender: SkyUI requires it, Alternate UI optionally uses it.
     SELECT * INTO s FROM fn_mod_stats('c0000000-0000-0000-0000-000000000001');
     ASSERT s.version_count = 1 AND s.dependent_count = 2 AND s.conflict_count = 0, 'Script Extender stats wrong';
@@ -174,5 +175,28 @@ BEGIN
     ASSERT (SELECT count(*) FROM fn_search_mods_by_tag('fx-ui', 'fx-no-such-tag')) = 0,
         'unknown tag must match nothing';
     RAISE NOTICE 'PASS 7 tag search is an AND match';
+END $$;
+ROLLBACK;
+
+
+-- 8. conflict_count counts each conflicting mod once, however many versions repeat it.
+BEGIN;
+DO $$
+DECLARE
+    s record;
+BEGIN
+    -- SkyUI's second version (d3) repeats the declared conflict with c4 and adds an
+    -- incompatible pair with c4's version d5. Still one partner mod.
+    INSERT INTO mod_dependencies (dependent_version_id, required_mod_id, dep_type)
+    VALUES ('d0000000-0000-0000-0000-000000000003', 'c0000000-0000-0000-0000-000000000004', 'conflicts');
+    INSERT INTO compatibility_matrix (version_a_id, version_b_id, status)
+    VALUES ('d0000000-0000-0000-0000-000000000003', 'd0000000-0000-0000-0000-000000000005', 'incompatible');
+
+    SELECT * INTO s FROM fn_mod_stats('c0000000-0000-0000-0000-000000000002');
+    ASSERT s.version_count = 2 AND s.conflict_count = 1,
+        format('SkyUI: expected 2 versions and 1 conflicting mod, got %s and %s', s.version_count, s.conflict_count);
+    SELECT * INTO s FROM fn_mod_stats('c0000000-0000-0000-0000-000000000004');
+    ASSERT s.conflict_count = 1, format('Alternate UI: expected 1 conflicting mod, got %s', s.conflict_count);
+    RAISE NOTICE 'PASS 8 conflict_count counts distinct conflicting mods';
 END $$;
 ROLLBACK;

@@ -71,6 +71,39 @@ export async function createLoadoutAction(
   return { error: 'Failed to create loadout' };
 }
 
+const uuid = z.string().uuid('Invalid id');
+
+const deleteLoadoutSchema = z.object({ loadout_id: uuid });
+
+const updateOrderSchema = z.object({
+  loadoutId: uuid,
+  orderedVersionIds: z
+    .array(uuid)
+    .min(1, 'Load order is empty')
+    .max(500, 'Too many mods in one loadout')
+    .refine((ids) => new Set(ids).size === ids.length, 'Duplicate mod in load order'),
+});
+
+const toggleEnabledSchema = z.object({ loadoutId: uuid, versionId: uuid, enabled: z.boolean() });
+
+const switchVersionSchema = z
+  .object({ loadoutId: uuid, oldVersionId: uuid, newVersionId: uuid })
+  .refine((v) => v.oldVersionId !== v.newVersionId, 'Pick a different version');
+
+const removeModSchema = z.object({ loadoutId: uuid, versionId: uuid });
+
+const autoSortSchema = z.object({ loadoutId: uuid });
+
+const addDependencySchema = z.object({ loadoutId: uuid, relatedModId: uuid });
+
+// RLS hides rows the caller does not own, so a blocked write matches 0 rows instead of failing.
+// Throwing inside withUser rolls the transaction back; formatErrorMessage shows the MODVAULT text.
+const NOT_OWNED = 'MODVAULT:NOT_FOUND: Loadout or mod not found, or you do not own this loadout';
+
+function assertChanged(rowCount: number | null) {
+  if (!rowCount) throw new Error(NOT_OWNED);
+}
+
 /**
  * Delete a loadout
  */
@@ -81,12 +114,14 @@ export async function deleteLoadoutAction(
   const session = await getSession();
   if (!session) return { error: 'Unauthorized' };
 
-  const loadoutId = formData.get('loadout_id') as string;
-  if (!loadoutId) return { error: 'Missing loadout ID' };
+  const parsed = deleteLoadoutSchema.safeParse({ loadout_id: formData.get('loadout_id') });
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Invalid input' };
+  const { loadout_id } = parsed.data;
 
   try {
     await withUser(session, async (client) => {
-      await client.query('DELETE FROM loadouts WHERE loadout_id = $1', [loadoutId]);
+      const res = await client.query('DELETE FROM loadouts WHERE loadout_id = $1', [loadout_id]);
+      assertChanged(res.rowCount);
     });
     revalidatePath('/loadouts');
     return { success: true };
@@ -105,19 +140,24 @@ export async function updateLoadoutOrderAction(
   const session = await getSession();
   if (!session) return { error: 'Unauthorized' };
 
+  const parsed = updateOrderSchema.safeParse({ loadoutId, orderedVersionIds });
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Invalid input' };
+  const data = parsed.data;
+
   try {
     await withUser(session, async (client) => {
-      for (let i = 0; i < orderedVersionIds.length; i++) {
-        await client.query(
+      for (let i = 0; i < data.orderedVersionIds.length; i++) {
+        const res = await client.query(
           `UPDATE loadout_mods
            SET position = $1
            WHERE loadout_id = $2 AND version_id = $3`,
-          [i, loadoutId, orderedVersionIds[i]]
+          [i, data.loadoutId, data.orderedVersionIds[i]]
         );
+        assertChanged(res.rowCount);
       }
     });
 
-    revalidatePath(`/loadouts/${loadoutId}`);
+    revalidatePath(`/loadouts/${data.loadoutId}`);
     return { success: true };
   } catch (err) {
     return { error: formatErrorMessage(err) };
@@ -135,17 +175,22 @@ export async function toggleModEnabledAction(
   const session = await getSession();
   if (!session) return { error: 'Unauthorized' };
 
+  const parsed = toggleEnabledSchema.safeParse({ loadoutId, versionId, enabled });
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Invalid input' };
+  const data = parsed.data;
+
   try {
     await withUser(session, async (client) => {
-      await client.query(
+      const res = await client.query(
         `UPDATE loadout_mods
          SET enabled = $1
          WHERE loadout_id = $2 AND version_id = $3`,
-        [enabled, loadoutId, versionId]
+        [data.enabled, data.loadoutId, data.versionId]
       );
+      assertChanged(res.rowCount);
     });
 
-    revalidatePath(`/loadouts/${loadoutId}`);
+    revalidatePath(`/loadouts/${data.loadoutId}`);
     return { success: true };
   } catch (err) {
     return { error: formatErrorMessage(err) };
@@ -163,17 +208,25 @@ export async function switchModVersionAction(
   const session = await getSession();
   if (!session) return { error: 'Unauthorized' };
 
+  const parsed = switchVersionSchema.safeParse({ loadoutId, oldVersionId, newVersionId });
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Invalid input' };
+  const data = parsed.data;
+
   try {
     await withUser(session, async (client) => {
-      await client.query(
-        `UPDATE loadout_mods
+      // The new version must belong to the same mod as the one it replaces.
+      const res = await client.query(
+        `UPDATE loadout_mods x
          SET version_id = $1
-         WHERE loadout_id = $2 AND version_id = $3`,
-        [newVersionId, loadoutId, oldVersionId]
+         FROM mod_versions cur, mod_versions nxt
+         WHERE x.loadout_id = $2 AND x.version_id = $3
+           AND cur.version_id = $3 AND nxt.version_id = $1 AND cur.mod_id = nxt.mod_id`,
+        [data.newVersionId, data.loadoutId, data.oldVersionId]
       );
+      assertChanged(res.rowCount);
     });
 
-    revalidatePath(`/loadouts/${loadoutId}`);
+    revalidatePath(`/loadouts/${data.loadoutId}`);
     return { success: true };
   } catch (err) {
     return { error: formatErrorMessage(err) };
@@ -190,16 +243,21 @@ export async function removeModFromLoadoutAction(
   const session = await getSession();
   if (!session) return { error: 'Unauthorized' };
 
+  const parsed = removeModSchema.safeParse({ loadoutId, versionId });
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Invalid input' };
+  const data = parsed.data;
+
   try {
     await withUser(session, async (client) => {
-      await client.query(
+      const res = await client.query(
         `DELETE FROM loadout_mods
          WHERE loadout_id = $1 AND version_id = $2`,
-        [loadoutId, versionId]
+        [data.loadoutId, data.versionId]
       );
+      assertChanged(res.rowCount);
     });
 
-    revalidatePath(`/loadouts/${loadoutId}`);
+    revalidatePath(`/loadouts/${data.loadoutId}`);
     return { success: true };
   } catch (err) {
     return { error: formatErrorMessage(err) };
@@ -213,12 +271,22 @@ export async function autoSortLoadoutAction(loadoutId: string): Promise<ActionSt
   const session = await getSession();
   if (!session) return { error: 'Unauthorized' };
 
+  const parsed = autoSortSchema.safeParse({ loadoutId });
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Invalid input' };
+  const data = parsed.data;
+
   try {
     await withUser(session, async (client) => {
-      await client.query('CALL pr_apply_load_order($1::uuid)', [loadoutId]);
+      // An already sorted loadout updates 0 rows legitimately, so check ownership up front.
+      const owned = await client.query(
+        'SELECT 1 FROM loadouts WHERE loadout_id = $1 AND user_id = fn_current_user_id()',
+        [data.loadoutId]
+      );
+      assertChanged(owned.rowCount);
+      await client.query('CALL pr_apply_load_order($1::uuid)', [data.loadoutId]);
     });
 
-    revalidatePath(`/loadouts/${loadoutId}`);
+    revalidatePath(`/loadouts/${data.loadoutId}`);
     return { success: true };
   } catch (err) {
     return { error: formatErrorMessage(err) };
@@ -235,6 +303,10 @@ export async function addMissingDependencyAction(
   const session = await getSession();
   if (!session) return { error: 'Unauthorized' };
 
+  const parsed = addDependencySchema.safeParse({ loadoutId, relatedModId });
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Invalid input' };
+  const data = parsed.data;
+
   try {
     await withUser(session, async (client) => {
       // Find primary version of the related mod
@@ -243,21 +315,22 @@ export async function addMissingDependencyAction(
          WHERE mod_id = $1
          ORDER BY is_primary DESC, uploaded_at DESC
          LIMIT 1`,
-        [relatedModId]
+        [data.relatedModId]
       );
 
       if (verRes.rows.length === 0) {
         throw new Error('MODVAULT:NOT_FOUND: No version found for required mod');
       }
 
+      // pr_add_mod_to_loadout raises NOT_FOUND or FORBIDDEN itself for a loadout the caller does not own.
       const primaryVersionId = verRes.rows[0].version_id;
       await client.query('CALL pr_add_mod_to_loadout($1::uuid, $2::uuid)', [
-        loadoutId,
+        data.loadoutId,
         primaryVersionId,
       ]);
     });
 
-    revalidatePath(`/loadouts/${loadoutId}`);
+    revalidatePath(`/loadouts/${data.loadoutId}`);
     return { success: true };
   } catch (err) {
     return { error: formatErrorMessage(err) };

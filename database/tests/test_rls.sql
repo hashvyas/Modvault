@@ -210,3 +210,53 @@ BEGIN
     RAISE NOTICE 'PASS 7 procedures work under the app role';
 END $$;
 ROLLBACK;
+
+
+-- 8. SECURITY DEFINER routines: no EXECUTE for PUBLIC, EXECUTE for the app role,
+--    and their triggers still fire for the app role (rating rollup and audit).
+BEGIN;
+DO $$
+DECLARE
+    leaked text;
+BEGIN
+    SELECT string_agg(p.oid::regprocedure::text, ', ') INTO leaked
+    FROM   pg_proc p
+    WHERE  p.pronamespace = 'public'::regnamespace AND p.prosecdef
+      AND  has_function_privilege('public', p.oid, 'EXECUTE');
+    ASSERT leaked IS NULL, format('PUBLIC can execute SECURITY DEFINER routines: %s', leaked);
+
+    SELECT string_agg(p.oid::regprocedure::text, ', ') INTO leaked
+    FROM   pg_proc p
+    WHERE  p.pronamespace = 'public'::regnamespace AND p.prosecdef
+      AND  NOT has_function_privilege('modvault_app', p.oid, 'EXECUTE');
+    ASSERT leaked IS NULL, format('modvault_app cannot execute: %s', leaked);
+END $$;
+
+SET LOCAL ROLE modvault_app;
+DO $$
+DECLARE
+    audits_before bigint;
+BEGIN
+    PERFORM set_config('app.user_id', 'b0000000-0000-0000-0000-000000000001', true);
+    PERFORM set_config('app.role', 'modder', true);
+    ASSERT (SELECT count(*) FROM fn_authenticate('fx_modder', 'fixture-pass')) = 1,
+        'fn_authenticate failed under the app role';
+
+    SET LOCAL ROLE modvault_owner;
+    SELECT count(*) INTO audits_before FROM audit_log;
+    SET LOCAL ROLE modvault_app;
+
+    -- trg_reviews_rating_rollup and trg_audit_reviews are SECURITY DEFINER trigger functions.
+    DELETE FROM reviews WHERE user_id = 'b0000000-0000-0000-0000-000000000001'
+                          AND mod_id = 'c0000000-0000-0000-0000-000000000002';
+    INSERT INTO reviews (user_id, mod_id, rating) VALUES
+        ('b0000000-0000-0000-0000-000000000001', 'c0000000-0000-0000-0000-000000000002', 4);
+    ASSERT (SELECT rating_count FROM mods WHERE mod_id = 'c0000000-0000-0000-0000-000000000002')
+         = (SELECT count(*) FROM reviews WHERE mod_id = 'c0000000-0000-0000-0000-000000000002'),
+        'rating rollup trigger did not run under the app role';
+
+    SET LOCAL ROLE modvault_owner;
+    ASSERT (SELECT count(*) FROM audit_log) > audits_before, 'audit trigger did not run under the app role';
+    RAISE NOTICE 'PASS 8 SECURITY DEFINER routines: no PUBLIC execute, app role and triggers work';
+END $$;
+ROLLBACK;
