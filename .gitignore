@@ -2,5 +2,9 @@
 data/raw/
 node_modules/
 .next/
+
+docs/handoff/person1.md
+person1.md
+__pycache__/
 person2.md
 docs/handoff/
