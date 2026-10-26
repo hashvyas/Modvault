@@ -35,6 +35,8 @@ if (process.env.NODE_ENV !== 'production') {
   globalForDb.pool = pool;
 }
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 /**
  * Execute database operations within an isolated transaction configured with session context.
  * Sets app.user_id and app.role for RLS and audit triggers.
@@ -48,13 +50,17 @@ export async function withUser<T>(
   try {
     await client.query('BEGIN');
 
-    const userId = session?.user_id || session?.sub || '';
-    const role = session?.role || '';
+    const tokenUserId = session?.user_id || session?.sub || '';
+    const userId = UUID_RE.test(tokenUserId) ? tokenUserId : null;
 
-    // Empty strings indicate anonymous user per contract section 6.1
+    // Role and is_active come from users, not the token, so a demotion or deactivation
+    // applies at once. A missing or inactive user gets empty strings: anonymous (contract 6.1).
     await client.query(
-      'SELECT set_config($1, $2, true), set_config($3, $4, true)',
-      ['app.user_id', userId, 'app.role', role]
+      `SELECT set_config('app.user_id', coalesce(u.user_id::text, ''), true),
+              set_config('app.role', coalesce(u.role::text, ''), true)
+       FROM (SELECT 1) AS one
+       LEFT JOIN users u ON u.user_id = $1::uuid AND u.is_active`,
+      [userId]
     );
 
     const result = await fn(client);

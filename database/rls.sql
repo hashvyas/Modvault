@@ -49,6 +49,23 @@ END $$;
 GRANT USAGE ON SCHEMA public TO modvault_app;
 GRANT EXECUTE ON ALL ROUTINES IN SCHEMA public TO modvault_app;
 
+-- SECURITY DEFINER routines run with the owner's rights. PostgreSQL grants
+-- EXECUTE on every new routine to PUBLIC, so take that away and let only the
+-- app role call them. Trigger functions keep firing: a trigger does not check
+-- EXECUTE on its function when it runs.
+REVOKE EXECUTE ON FUNCTION  fn_register_user(text, text, text)        FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION  fn_authenticate(text, text)               FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION  fn_audit_log()                            FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION  fn_reviews_rating_rollup()                FROM PUBLIC;
+REVOKE EXECUTE ON PROCEDURE pr_set_user_role(uuid, user_role_enum)    FROM PUBLIC;
+REVOKE EXECUTE ON PROCEDURE pr_refresh_reports()                      FROM PUBLIC;
+GRANT  EXECUTE ON FUNCTION  fn_register_user(text, text, text)        TO modvault_app;
+GRANT  EXECUTE ON FUNCTION  fn_authenticate(text, text)               TO modvault_app;
+GRANT  EXECUTE ON FUNCTION  fn_audit_log()                            TO modvault_app;
+GRANT  EXECUTE ON FUNCTION  fn_reviews_rating_rollup()                TO modvault_app;
+GRANT  EXECUTE ON PROCEDURE pr_set_user_role(uuid, user_role_enum)    TO modvault_app;
+GRANT  EXECUTE ON PROCEDURE pr_refresh_reports()                      TO modvault_app;
+
 -- Column list, not a table grant: a column REVOKE would not override a table
 -- grant, and password_hash must stay unreadable.
 GRANT SELECT (user_id, username, email, role, is_active, created_at, updated_at) ON users TO modvault_app;

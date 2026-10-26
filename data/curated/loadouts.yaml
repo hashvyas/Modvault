@@ -2,14 +2,15 @@
   owner: modder1
   game: skyrimspecialedition
   game_version: "1.6.1170"
-  description: "Skyrim UI setup with missing SkyUI dependency, bad load order, and menu conflict"
+  description: "Skyrim UI setup with a missing SkyUI dependency and a bad load order, both fixable in the builder"
   is_public: true
   expected_status: broken
+  # Only fixable issues: Add SkyUI and Auto-sort make it healthy (demo step 3).
+  # DECLARED_CONFLICT and INCOMPATIBLE_PAIR are covered by Broken Settlement Pack.
   mods:
     - "skyrimspecialedition:53000"
     - "skyrimspecialedition:32444"
     - "skyrimspecialedition:1429"
-    - "skyrimspecialedition:19080"
   disabled: []
 
 - name: Healthy Skyrim Essentials
