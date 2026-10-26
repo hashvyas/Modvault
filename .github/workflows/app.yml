@@ -29,7 +29,7 @@ jobs:
     env:
       DATABASE_URL: postgresql://modvault_owner:modvault_owner_dev@localhost:5432/modvault
       APP_DATABASE_URL: postgresql://modvault_app:modvault_app_dev@localhost:5432/modvault
-      JWT_SECRET: e0d783d8a1562985f47055a8f4c102b378c46581d643ab8f3bc77df73562479e
+      JWT_SECRET: ci-only-not-a-real-secret-0000000000000000000000000000000000000000
 
     steps:
       - name: Checkout repository

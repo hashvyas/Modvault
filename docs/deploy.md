@@ -136,7 +136,7 @@ Once deployed, verify the live deployment by performing the demo script steps:
 
 ## 5. UI Screenshots Reference
 
-All pages have been validated and captured during the test suite execution. Screenshots are stored in [`docs/screenshots/`](file:///C:/Modvault/docs/screenshots):
+All pages have been validated and captured during the test suite execution. Screenshots are stored in [`docs/screenshots/`](screenshots/):
 
 | Screenshot | Description | Preview Path |
 |---|---|---|
