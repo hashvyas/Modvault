@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { getSession } from '@/lib/session';
 import { withUser } from '@/lib/db';
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -92,9 +92,6 @@ export default async function HomePage() {
     <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-16">
       {/* Hero & Search Bar */}
       <section className="text-center space-y-6 max-w-3xl mx-auto">
-        <Badge variant="outline" className="border-cyan-500/40 text-cyan-400">
-          PES Mini Project &bull; Hybrid Semantic Mod Intelligence
-        </Badge>
         <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight">
           Pre-flight mod compatibility and smart discovery.
         </h1>
@@ -108,11 +105,9 @@ export default async function HomePage() {
             type="search"
             name="q"
             placeholder="Search mods by keywords or meaning (e.g., 'make the menus look better')..."
-            className="h-12 px-4 text-base bg-card/80 border-border focus-visible:ring-cyan-500"
+            className="bg-card/80 border-border focus-visible:ring-cyan-500"
           />
-          <Button type="submit" size="lg" className="h-12 px-6 bg-cyan-600 hover:bg-cyan-500 text-white font-medium">
-            Search
-          </Button>
+          <Button type="submit">Search</Button>
         </form>
       </section>
 
@@ -159,10 +154,8 @@ export default async function HomePage() {
               <h2 className="text-2xl font-bold tracking-tight">Featured Mods</h2>
               <p className="text-muted-foreground text-sm">Top verified community essentials with high ratings.</p>
             </div>
-            <Link href="/search">
-              <Button variant="ghost" size="sm" className="text-xs">
-                View all mods &rarr;
-              </Button>
+            <Link href="/search" className={buttonVariants({ variant: 'ghost', size: 'sm', className: 'text-xs' })}>
+              View all mods &rarr;
             </Link>
           </div>
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">

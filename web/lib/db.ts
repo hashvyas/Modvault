@@ -15,6 +15,7 @@ export interface SessionUser {
   role?: string;
 }
 
+// On Neon, APP_DATABASE_URL needs ?sslmode=require at the end or the connection is refused.
 const connectionString =
   process.env.APP_DATABASE_URL ||
   process.env.DATABASE_URL ||
@@ -26,7 +27,7 @@ export const pool =
   globalForDb.pool ??
   new Pool({
     connectionString,
-    max: 10,
+    max: 5,
     idleTimeoutMillis: 30000,
   });
 

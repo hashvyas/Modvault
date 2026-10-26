@@ -53,9 +53,19 @@ export async function upsertCompatibilityAction(
 
   try {
     await withUser(session, async (client) => {
+      let detail: unknown = detailObj;
+      // Empty reason and files keep the stored detail, so a re-save never wipes it to {}.
+      if (Object.keys(detailObj).length === 0) {
+        const existing = await client.query<{ conflict_detail: unknown }>(
+          `SELECT conflict_detail FROM compatibility_matrix
+           WHERE version_a_id = least($1::uuid, $2::uuid) AND version_b_id = greatest($1::uuid, $2::uuid)`,
+          [version_a, version_b]
+        );
+        detail = existing.rows[0]?.conflict_detail ?? detailObj;
+      }
       await client.query(
         'CALL pr_upsert_compatibility($1::uuid, $2::uuid, $3::compat_status_enum, $4::jsonb)',
-        [version_a, version_b, status, JSON.stringify(detailObj)]
+        [version_a, version_b, status, JSON.stringify(detail)]
       );
     });
 

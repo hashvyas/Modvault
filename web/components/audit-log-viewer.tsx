@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 
 export interface AuditLogRow {
   audit_id: string;
@@ -127,18 +127,12 @@ export function AuditLogViewer({
         </div>
 
         <div className="flex items-end gap-2">
-          <Button
-            type="submit"
-            size="sm"
-            className="flex-1 bg-cyan-600 hover:bg-cyan-500 text-white font-medium text-xs h-8"
-          >
+          <Button type="submit" className="flex-1">
             Filter
           </Button>
           {(filters.currentTable || filters.currentOp || filters.currentUser || filters.currentFrom) && (
-            <Link href="/admin">
-              <Button type="button" variant="ghost" size="sm" className="text-xs h-8">
-                Reset
-              </Button>
+            <Link href="/admin" className={buttonVariants({ variant: 'ghost' })}>
+              Reset
             </Link>
           )}
         </div>
