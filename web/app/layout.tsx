@@ -7,9 +7,8 @@ import { Navbar } from "@/components/navbar";
 const geist = Geist({ subsets: ["latin"], variable: "--font-sans" });
 
 export const metadata: Metadata = {
-  title: "ModVault - Mod Compatibility Intelligence",
-  description:
-    "Pre-flight mod compatibility checker and semantic discovery for Skyrim SE, Fallout 4, and Stardew Valley.",
+  title: "ModVault",
+  description: "Pre-flight mod compatibility checks and hybrid search for Skyrim SE, Fallout 4 and Stardew Valley.",
 };
 
 export default function RootLayout({

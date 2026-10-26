@@ -31,5 +31,10 @@ export default defineConfig({
     url: 'http://127.0.0.1:3000',
     reuseExistingServer: !process.env.CI,
     timeout: 120000,
+    // The app refuses to start sessions without a JWT_SECRET of 32+ chars; CI sets one in app.yml.
+    // ASSUMPTION: a fixed test-only secret is fine for local e2e when none is exported in the shell.
+    env: {
+      JWT_SECRET: process.env.JWT_SECRET ?? 'e2e-only-not-a-real-secret-00000000000000000000000000000000000000',
+    },
   },
 });

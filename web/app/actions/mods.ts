@@ -192,12 +192,16 @@ export async function publishModAction(
 
   let newModId: string | null = null;
 
+  // Generate 384-dimension vector embedding for new mod; never publish with a NULL embedding.
+  let pgEmbedding: string;
   try {
-    // Generate 384-dimension vector embedding for new mod
-    const textToEmbed = `${name}. ${category}. ${summary}`;
-    const vector = await embed(textToEmbed);
-    const pgEmbedding = toPgVector(vector);
+    pgEmbedding = toPgVector(await embed(`${name}. ${category}. ${summary}`));
+  } catch (err) {
+    console.error('Embedding generation failed during publish:', err);
+    return { error: 'Could not generate the search embedding for this mod, so it was not published. Please try again.' };
+  }
 
+  try {
     newModId = await withUser(session, async (client) => {
       const res = await client.query<{ p_mod_id: string }>(
         'CALL pr_publish_mod($1, $2, $3, $4, $5, $6::text[], $7::vector, NULL)',
