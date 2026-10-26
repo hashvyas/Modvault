@@ -1,13 +1,13 @@
 # Multi-stage Dockerfile for ModVault Next.js Standalone
 # Stage 1: Dependencies
-FROM node:20-slim AS deps
+FROM node:24-slim AS deps
 WORKDIR /app
 
 COPY package.json package-lock.json* ./
 RUN npm ci
 
 # Stage 2: Builder
-FROM node:20-slim AS builder
+FROM node:24-slim AS builder
 WORKDIR /app
 
 COPY --from=deps /app/node_modules ./node_modules
@@ -27,7 +27,7 @@ RUN npm run cache-model
 RUN mkdir -p /app/public
 
 # Stage 3: Runner
-FROM node:20-slim AS runner
+FROM node:24-slim AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
