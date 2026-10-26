@@ -15,6 +15,10 @@ let pipelinePromise: Promise<unknown> | null = null;
 function getPipeline(): Promise<unknown> {
   if (!pipelinePromise) {
     pipelinePromise = pipeline('feature-extraction', 'Xenova/all-MiniLM-L6-v2');
+    // Do not cache a failed model load, or every later embed() fails until restart.
+    pipelinePromise.catch(() => {
+      pipelinePromise = null;
+    });
   }
   return pipelinePromise;
 }

@@ -65,7 +65,8 @@ export async function loginAction(
   }
 
   const next = formData.get('next')?.toString() || '/';
-  redirect(next);
+  // Only same-site paths: "//host" and absolute URLs would redirect off-site.
+  redirect(next.startsWith('/') && !next.startsWith('//') && !next.startsWith('/\\') ? next : '/');
 }
 
 export async function registerAction(

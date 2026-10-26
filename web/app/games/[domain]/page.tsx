@@ -4,7 +4,7 @@ import { getSession } from '@/lib/session';
 import { withUser } from '@/lib/db';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 
 export const dynamic = 'force-dynamic';
 
@@ -175,15 +175,14 @@ export default async function GameBrowsePage({ params, searchParams }: Props) {
         </div>
 
         <div className="flex items-center gap-3">
-          <Link href={`/search?game=${game.domain}`}>
-            <Button variant="outline" size="sm">
-              Search in {game.name}
-            </Button>
+          <Link href={`/search?game=${game.domain}`} className={buttonVariants()}>
+            Search in {game.name}
           </Link>
-          <Link href="/mods/new">
-            <Button size="sm">
-              Publish Mod
-            </Button>
+          <Link href="/mods/new" className={buttonVariants()}>
+            Publish Mod
+          </Link>
+          <Link href={`/games/${game.domain}/compat`} className={buttonVariants()}>
+            Compatibility
           </Link>
         </div>
       </div>
@@ -198,7 +197,7 @@ export default async function GameBrowsePage({ params, searchParams }: Props) {
           <select
             name="category"
             defaultValue={currentCategory}
-            className="w-full h-9 rounded-md border border-border bg-card px-2.5 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-cyan-500"
+            className="w-full h-8 rounded-md border border-border bg-card px-2.5 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-cyan-500"
           >
             <option value="">All Categories</option>
             {categories.map((c) => (
@@ -217,7 +216,7 @@ export default async function GameBrowsePage({ params, searchParams }: Props) {
           <select
             name="tag"
             defaultValue={currentTag}
-            className="w-full h-9 rounded-md border border-border bg-card px-2.5 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-cyan-500"
+            className="w-full h-8 rounded-md border border-border bg-card px-2.5 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-cyan-500"
           >
             <option value="">All Tags</option>
             {tags.map((t) => (
@@ -236,7 +235,7 @@ export default async function GameBrowsePage({ params, searchParams }: Props) {
           <select
             name="sort"
             defaultValue={currentSort}
-            className="w-full h-9 rounded-md border border-border bg-card px-2.5 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-cyan-500"
+            className="w-full h-8 rounded-md border border-border bg-card px-2.5 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-cyan-500"
           >
             <option value="downloads">Most Downloaded</option>
             <option value="rating">Highest Rated</option>
@@ -246,14 +245,12 @@ export default async function GameBrowsePage({ params, searchParams }: Props) {
 
         {/* Apply & Reset */}
         <div className="flex items-end gap-2">
-          <Button type="submit" size="sm" className="flex-1 bg-cyan-600 hover:bg-cyan-500 text-white font-medium">
+          <Button type="submit" className="flex-1">
             Filter
           </Button>
           {(currentCategory || currentTag || currentSort !== 'downloads') && (
-            <Link href={`/games/${domain}`}>
-              <Button variant="ghost" size="sm" type="button" className="text-xs">
-                Reset
-              </Button>
+            <Link href={`/games/${domain}`} className={buttonVariants({ variant: 'ghost' })}>
+              Reset
             </Link>
           )}
         </div>

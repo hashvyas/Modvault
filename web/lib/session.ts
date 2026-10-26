@@ -1,5 +1,6 @@
 import { cookies } from 'next/headers';
 import { SignJWT, jwtVerify } from 'jose';
+import { getJwtSecretKey } from '@/lib/jwt-secret';
 
 export interface SessionPayload {
   sub: string;
@@ -11,11 +12,6 @@ export interface SessionPayload {
 
 export const SESSION_COOKIE_NAME = 'modvault_session';
 const SESSION_EXPIRY_SECONDS = 7 * 24 * 60 * 60; // 7 days
-
-function getSecretKey(): Uint8Array {
-  const secret = process.env.JWT_SECRET || 'fallback-secret-for-development-must-be-at-least-32-chars';
-  return new TextEncoder().encode(secret);
-}
 
 /**
  * Sign a JWT token with sub, username, and role using HS256 algorithm.
@@ -33,15 +29,17 @@ export async function createSessionToken(payload: {
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
     .setExpirationTime('7d')
-    .sign(getSecretKey());
+    .sign(getJwtSecretKey());
 }
 
 /**
  * Verify and decode a session token. Returns null if invalid or expired.
  */
 export async function verifySessionToken(token: string): Promise<SessionPayload | null> {
+  // Outside the try: a missing secret is a config error, not an invalid token.
+  const key = getJwtSecretKey();
   try {
-    const { payload } = await jwtVerify(token, getSecretKey(), {
+    const { payload } = await jwtVerify(token, key, {
       algorithms: ['HS256'],
     });
     return payload as unknown as SessionPayload;

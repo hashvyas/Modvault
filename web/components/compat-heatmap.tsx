@@ -42,7 +42,6 @@ export function CompatibilityHeatmap({
   const [selectedPair, setSelectedPair] = useState<{
     verA: PrimaryVersionItem;
     verB: PrimaryVersionItem;
-    existing: HeatmapCellData | null;
   } | null>(null);
 
   const [state, formAction, isPending] = useActionState<ActionState, FormData>(
@@ -69,9 +68,14 @@ export function CompatibilityHeatmap({
   const handleCellClick = (vA: PrimaryVersionItem, vB: PrimaryVersionItem) => {
     if (vA.version_id === vB.version_id) return;
     if (!canEdit) return;
-    const existing = getCell(vA.version_id, vB.version_id);
-    setSelectedPair({ verA: vA, verB: vB, existing });
+    setSelectedPair({ verA: vA, verB: vB });
   };
+
+  // Read the cell from live props, not a click-time snapshot: React resets the form
+  // after each save, and a stale snapshot would reset reason/files to empty.
+  const existing = selectedPair
+    ? getCell(selectedPair.verA.version_id, selectedPair.verB.version_id)
+    : null;
 
   return (
     <div className="space-y-6">
@@ -227,7 +231,7 @@ export function CompatibilityHeatmap({
               </div>
             )}
 
-            <form action={formAction} className="space-y-4">
+            <form key={JSON.stringify(existing)} action={formAction} className="space-y-4">
               <input type="hidden" name="domain" value={domain} />
               <input type="hidden" name="version_a" value={selectedPair.verA.version_id} />
               <input type="hidden" name="version_b" value={selectedPair.verB.version_id} />
@@ -248,7 +252,7 @@ export function CompatibilityHeatmap({
                   id="status"
                   name="status"
                   required
-                  defaultValue={selectedPair.existing?.status || 'incompatible'}
+                  defaultValue={existing?.status || 'incompatible'}
                   className="w-full h-9 rounded-md border border-border bg-card px-2.5 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-cyan-500"
                 >
                   <option value="compatible">Compatible (Verified clean)</option>
@@ -263,7 +267,7 @@ export function CompatibilityHeatmap({
                 <input
                   id="reason"
                   name="reason"
-                  defaultValue={selectedPair.existing?.conflict_detail?.reason || ''}
+                  defaultValue={existing?.conflict_detail?.reason || ''}
                   placeholder="e.g. Overlapping HUD SWF menus cause interface crash"
                   className="w-full h-9 rounded-md border border-border bg-card px-2.5 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-cyan-500"
                 />
@@ -275,7 +279,7 @@ export function CompatibilityHeatmap({
                   id="files"
                   name="files"
                   rows={2}
-                  defaultValue={selectedPair.existing?.conflict_detail?.files?.join('\n') || ''}
+                  defaultValue={existing?.conflict_detail?.files?.join('\n') || ''}
                   placeholder="interface/hudmenu.swf"
                   className="w-full rounded-md border border-border bg-card p-2 text-xs font-mono text-foreground focus:outline-none focus:ring-2 focus:ring-cyan-500"
                 />

@@ -190,7 +190,7 @@ export function AddToLoadoutPicker({
         <select
           name="loadout_id"
           required
-          className="h-9 flex-1 rounded-md border border-border bg-card px-2.5 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-cyan-500"
+          className="h-8 flex-1 rounded-md border border-border bg-card px-2.5 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-cyan-500"
         >
           {loadouts.map((l) => (
             <option key={l.loadout_id} value={l.loadout_id}>
@@ -202,7 +202,7 @@ export function AddToLoadoutPicker({
         <select
           name="version_id"
           defaultValue={primaryVer?.version_id}
-          className="h-9 w-36 rounded-md border border-border bg-card px-2.5 text-xs font-mono text-foreground focus:outline-none focus:ring-2 focus:ring-cyan-500"
+          className="h-8 w-36 rounded-md border border-border bg-card px-2.5 text-xs font-mono text-foreground focus:outline-none focus:ring-2 focus:ring-cyan-500"
         >
           {versions.map((v) => (
             <option key={v.version_id} value={v.version_id}>
@@ -211,12 +211,7 @@ export function AddToLoadoutPicker({
           ))}
         </select>
 
-        <Button
-          type="submit"
-          size="sm"
-          disabled={isPending}
-          className="bg-cyan-600 hover:bg-cyan-500 text-white font-medium whitespace-nowrap"
-        >
+        <Button type="submit" disabled={isPending}>
           {isPending ? 'Adding...' : 'Add to Loadout'}
         </Button>
       </form>
