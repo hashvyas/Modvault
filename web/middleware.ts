@@ -1,15 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { jwtVerify } from 'jose';
+import { getJwtSecretKey } from '@/lib/jwt-secret';
 
 const SESSION_COOKIE_NAME = 'modvault_session';
 
-function getSecretKey(): Uint8Array {
-  const secret = process.env.JWT_SECRET || 'REDACTED';
-  return new TextEncoder().encode(secret);
-}
-
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
+
+  let secretKey: Uint8Array;
+  try {
+    secretKey = getJwtSecretKey();
+  } catch (err) {
+    // Fail closed without throwing: every route except /login itself goes to /login.
+    console.error(err);
+    if (pathname === '/login') return NextResponse.next();
+    return NextResponse.redirect(new URL('/login', req.url));
+  }
 
   // Static files and internal Next.js assets are skipped via config.matcher
   const token = req.cookies.get(SESSION_COOKIE_NAME)?.value;
@@ -17,7 +23,7 @@ export async function middleware(req: NextRequest) {
   let session: { sub: string; username: string; role: string } | null = null;
   if (token) {
     try {
-      const { payload } = await jwtVerify(token, getSecretKey(), {
+      const { payload } = await jwtVerify(token, secretKey, {
         algorithms: ['HS256'],
       });
       session = payload as unknown as { sub: string; username: string; role: string };

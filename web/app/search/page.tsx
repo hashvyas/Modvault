@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { getSession } from '@/lib/session';
 import { withUser } from '@/lib/db';
 import { embed, toPgVector } from '@/lib/embed';
+import { formatErrorMessage } from '@/lib/errors';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -168,8 +169,7 @@ export default async function SearchPage({ searchParams }: Props) {
       });
     }
   } catch (err: unknown) {
-    console.error('Search error:', err);
-    errorMsg = err instanceof Error ? err.message : String(err);
+    errorMsg = formatErrorMessage(err);
   }
 
   return (
@@ -302,12 +302,12 @@ export default async function SearchPage({ searchParams }: Props) {
                   <div className="space-y-2">
                     {/* Ranking & Match Badges */}
                     <div className="flex flex-wrap items-center gap-1.5">
-                      {mod.semantic_rank !== null && (
+                      {mod.semantic_rank != null && (
                         <Badge variant="meaning" className="text-[11px]">
                           Meaning #{mod.semantic_rank}
                         </Badge>
                       )}
-                      {mod.keyword_rank !== null && (
+                      {mod.keyword_rank != null && (
                         <Badge variant="keyword" className="text-[11px]">
                           Keyword #{mod.keyword_rank}
                         </Badge>

@@ -25,19 +25,17 @@ export function parseModvaultError(error: unknown): AppError | null {
   return null;
 }
 
+export const GENERIC_ERROR_MESSAGE = 'Something went wrong. Please try again.';
+
 /**
- * Returns a human-friendly error message, extracting the human text from MODVAULT errors when present.
+ * Returns text that is safe to show in the browser: the human text of a MODVAULT error,
+ * otherwise a generic message. Non-MODVAULT errors (raw Postgres text, stacks) are only logged.
  */
 export function formatErrorMessage(error: unknown): string {
   const parsed = parseModvaultError(error);
   if (parsed) {
     return parsed.message;
   }
-  if (error instanceof Error) {
-    return error.message;
-  }
-  if (typeof error === 'string') {
-    return error;
-  }
-  return 'An unexpected error occurred.';
+  console.error(error);
+  return GENERIC_ERROR_MESSAGE;
 }
