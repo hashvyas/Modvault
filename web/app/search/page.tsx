@@ -189,13 +189,13 @@ export default async function SearchPage({ searchParams }: Props) {
             name="q"
             defaultValue={q}
             placeholder="Search keywords or semantic meaning..."
-            className="h-11 text-base bg-card border-border"
+            className="bg-card border-border"
           />
 
           <select
             name="game"
             defaultValue={gameFilterParam}
-            className="h-11 rounded-md border border-border bg-card px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-cyan-500"
+            className="h-8 rounded-lg border border-border bg-card px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-cyan-500"
           >
             <option value="">All Games</option>
             {games.map((g) => (
@@ -210,9 +210,7 @@ export default async function SearchPage({ searchParams }: Props) {
             <input key={t} type="hidden" name="tag" value={t} />
           ))}
 
-          <Button type="submit" className="h-11 px-6 bg-cyan-600 hover:bg-cyan-500 text-white font-medium">
-            Search
-          </Button>
+          <Button type="submit">Search</Button>
         </form>
       </div>
 

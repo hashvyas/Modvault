@@ -81,3 +81,19 @@
     - "stardewvalley:3753"
     - "stardewvalley:2400"
   disabled: []
+
+# ASSUMPTION: same mods as "Healthy Skyrim Essentials" so expected_status healthy holds without new compat data.
+- name: Modder1 Private Essentials
+  owner: modder1
+  game: skyrimspecialedition
+  game_version: "1.6.1170"
+  description: "Private copy of the Skyrim essentials, visible only to modder1"
+  is_public: false
+  expected_status: healthy
+  mods:
+    - "skyrimspecialedition:266"
+    - "skyrimspecialedition:32444"
+    - "skyrimspecialedition:17230"
+    - "skyrimspecialedition:12604"
+    - "skyrimspecialedition:1429"
+  disabled: []

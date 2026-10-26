@@ -26,7 +26,7 @@ BEGIN
     ASSERT v_cnt = 40, 'Expected 40 reviews, got ' || v_cnt;
 
     SELECT count(*) INTO v_cnt FROM loadouts;
-    ASSERT v_cnt = 6, 'Expected 6 loadouts, got ' || v_cnt;
+    ASSERT v_cnt = 7, 'Expected 7 loadouts, got ' || v_cnt;
 
     -- 2. Loadout health status expectations (requires P1 functions from Sync 2)
     SELECT status INTO v_status FROM loadout_health_view WHERE loadout_id = '74867771-c761-5ed8-9468-8358f8cad4f8'::uuid;
@@ -41,6 +41,8 @@ BEGIN
     ASSERT v_status = 'healthy', 'Loadout "Healthy Farm Automation" status expected healthy, got ' || coalesce(v_status, 'NULL');
     SELECT status INTO v_status FROM loadout_health_view WHERE loadout_id = '765b7740-9f60-539f-864e-58dd0eac34c6'::uuid;
     ASSERT v_status = 'broken', 'Loadout "Broken Stardew Valley Expanded" status expected broken, got ' || coalesce(v_status, 'NULL');
+    SELECT status INTO v_status FROM loadout_health_view WHERE loadout_id = '89b8cb84-637a-5fda-a983-7e9f85a8af80'::uuid;
+    ASSERT v_status = 'healthy', 'Loadout "Modder1 Private Essentials" status expected healthy, got ' || coalesce(v_status, 'NULL');
 
     RAISE NOTICE 'seed_expectations: all assertions passed successfully.';
 END $$;
