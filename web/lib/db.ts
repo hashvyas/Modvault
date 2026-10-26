@@ -1,0 +1,72 @@
+import { Pool, PoolClient } from 'pg';
+import path from 'path';
+import dotenv from 'dotenv';
+
+// Ensure environment variables are loaded if running in Next.js development or standalone
+if (!process.env.APP_DATABASE_URL && !process.env.DATABASE_URL) {
+  dotenv.config({ path: path.resolve(process.cwd(), '../.env') });
+  dotenv.config({ path: path.resolve(process.cwd(), '.env') });
+}
+
+export interface SessionUser {
+  user_id?: string;
+  sub?: string;
+  username?: string;
+  role?: string;
+}
+
+const connectionString =
+  process.env.APP_DATABASE_URL ||
+  process.env.DATABASE_URL ||
+  'postgresql://modvault_app:modvault_app_dev@localhost:5432/modvault';
+
+const globalForDb = globalThis as unknown as { pool: Pool | undefined };
+
+export const pool =
+  globalForDb.pool ??
+  new Pool({
+    connectionString,
+    max: 10,
+    idleTimeoutMillis: 30000,
+  });
+
+if (process.env.NODE_ENV !== 'production') {
+  globalForDb.pool = pool;
+}
+
+/**
+ * Execute database operations within an isolated transaction configured with session context.
+ * Sets app.user_id and app.role for RLS and audit triggers.
+ * Rolls back automatically on error and always releases the client.
+ */
+export async function withUser<T>(
+  session: SessionUser | null | undefined,
+  fn: (client: PoolClient) => Promise<T>
+): Promise<T> {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    const userId = session?.user_id || session?.sub || '';
+    const role = session?.role || '';
+
+    // Empty strings indicate anonymous user per contract section 6.1
+    await client.query(
+      'SELECT set_config($1, $2, true), set_config($3, $4, true)',
+      ['app.user_id', userId, 'app.role', role]
+    );
+
+    const result = await fn(client);
+    await client.query('COMMIT');
+    return result;
+  } catch (error) {
+    try {
+      await client.query('ROLLBACK');
+    } catch {
+      // Ignore rollback errors on broken connection
+    }
+    throw error;
+  } finally {
+    client.release();
+  }
+}
