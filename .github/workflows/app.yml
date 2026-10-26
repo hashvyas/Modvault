@@ -1,0 +1,109 @@
+name: Web Application CI
+
+on:
+  push:
+    branches: [main, p2-app]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test-and-e2e:
+    name: Build, Lint, Typecheck and E2E Tests
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: pgvector/pgvector:pg18
+        env:
+          POSTGRES_USER: modvault_owner
+          POSTGRES_PASSWORD: modvault_owner_dev
+          POSTGRES_DB: modvault
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql://modvault_owner:modvault_owner_dev@localhost:5432/modvault
+      APP_DATABASE_URL: postgresql://modvault_app:modvault_app_dev@localhost:5432/modvault
+      JWT_SECRET: e0d783d8a1562985f47055a8f4c102b378c46581d643ab8f3bc77df73562479e
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: 'npm'
+          cache-dependency-path: web/package-lock.json
+
+      - name: Setup Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install PostgreSQL client tools
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-client
+
+      - name: Drop and rebuild database schema and seed
+        run: |
+          python scripts/db_reset.py
+
+      - name: Verify seed expectations
+        run: |
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f database/seed_expectations.sql
+
+      - name: Install scripts dependencies and generate vector embeddings
+        run: |
+          npm --prefix scripts ci
+          npm --prefix scripts run embed
+
+      - name: Verify zero pending embeddings
+        run: |
+          PENDING=$(psql "$DATABASE_URL" -t -A -c "SELECT count(*) FROM mods WHERE embedding IS NULL;")
+          if [ "$PENDING" -ne "0" ]; then
+            echo "Error: Found $PENDING mods with NULL embeddings after embed run."
+            exit 1
+          fi
+          echo "Verified: All mods successfully embedded."
+
+      - name: Install web application dependencies
+        run: |
+          npm --prefix web ci
+
+      - name: Web Lint check
+        run: |
+          npm --prefix web run lint
+
+      - name: Web TypeScript typecheck
+        run: |
+          npm --prefix web run typecheck
+
+      - name: Build Next.js standalone application
+        run: |
+          npm --prefix web run build
+
+      - name: Install Playwright Chromium browser and OS dependencies
+        run: |
+          npx --prefix web playwright install --with-deps chromium
+
+      - name: Run Playwright end-to-end demo test suite
+        run: |
+          npm --prefix web run test:e2e
+
+      - name: Upload Playwright Test Report Artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            web/playwright-report/
+            docs/screenshots/
+          retention-days: 7
