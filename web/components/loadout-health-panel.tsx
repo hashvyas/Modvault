@@ -7,6 +7,7 @@ import {
 } from '@/app/actions/loadouts';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { ScoreMeter } from '@/components/score-meter';
 
 export interface HealthIssueItem {
   issue_type: string;
@@ -81,13 +82,10 @@ export function LoadoutHealthPanel({
     URL.revokeObjectURL(url);
   };
 
-  let scoreColor = 'text-emerald-400 border-emerald-500/40 bg-emerald-500/10';
   let statusBadgeVariant: 'success' | 'warning' | 'destructive' = 'success';
   if (health.status === 'broken' || health.score < 50) {
-    scoreColor = 'text-rose-400 border-rose-500/40 bg-rose-500/10';
     statusBadgeVariant = 'destructive';
   } else if (health.status === 'warnings' || health.score < 80) {
-    scoreColor = 'text-amber-400 border-amber-500/40 bg-amber-500/10';
     statusBadgeVariant = 'warning';
   }
 
@@ -107,11 +105,7 @@ export function LoadoutHealthPanel({
 
         {/* Score Ring Display */}
         <div className="flex items-center gap-4 pt-1">
-          <div
-            className={`w-16 h-16 rounded-full border-2 flex items-center justify-center font-bold text-2xl font-mono shrink-0 ${scoreColor}`}
-          >
-            {health.score}
-          </div>
+          <ScoreMeter score={health.score} status={health.status} size={72} />
           <div className="space-y-1 text-xs">
             <div className="text-foreground font-semibold">
               {health.status === 'healthy'

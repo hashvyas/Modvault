@@ -6,82 +6,61 @@ import { registerAction } from '@/app/actions/auth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
 
 export default function RegisterPage() {
   const [state, formAction, isPending] = useActionState(registerAction, null);
 
   return (
-    <div className="flex min-h-screen items-center justify-center p-4 bg-background">
-      <Card className="w-full max-w-md border-border/40">
-        <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold tracking-tight">Create Account</CardTitle>
-          <CardDescription>
-            Join ModVault to curate mods and analyze loadouts
-          </CardDescription>
-        </CardHeader>
-        <form action={formAction}>
-          <CardContent className="space-y-4">
-            {state?.error && (
-              <div
-                role="alert"
-                className="rounded-md bg-destructive/15 p-3 text-sm text-destructive"
-              >
-                {state.error}
-              </div>
-            )}
-            <div className="space-y-2">
-              <Label htmlFor="username">Username</Label>
-              <Input
-                id="username"
-                name="username"
-                placeholder="coolmodder"
-                required
-                autoComplete="username"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                name="email"
-                type="email"
-                placeholder="modder@example.com"
-                required
-                autoComplete="email"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                name="password"
-                type="password"
-                required
-                autoComplete="new-password"
-              />
-            </div>
-          </CardContent>
-          <CardFooter className="flex flex-col space-y-4">
-            <Button type="submit" className="w-full" disabled={isPending}>
-              {isPending ? 'Creating account...' : 'Create Account'}
-            </Button>
-            <div className="text-center text-sm text-muted-foreground">
-              Already have an account?{' '}
-              <Link href="/login" className="text-primary hover:underline">
-                Sign in
-              </Link>
-            </div>
-          </CardFooter>
+    <div className="flex min-h-screen items-center justify-center bg-background p-6">
+      <div className="w-full max-w-sm space-y-10">
+        <div className="space-y-2">
+          <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">ModVault</p>
+          <h1 className="text-3xl font-light tracking-tight">Create your account</h1>
+        </div>
+
+        <form action={formAction} className="space-y-6">
+          {state?.error && (
+            <p role="alert" className="text-sm text-destructive">
+              {state.error}
+            </p>
+          )}
+          <div className="space-y-2">
+            <Label htmlFor="username" className="text-xs text-muted-foreground">
+              Username
+            </Label>
+            <Input id="username" name="username" required autoComplete="username" className="h-11" />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="email" className="text-xs text-muted-foreground">
+              Email
+            </Label>
+            <Input id="email" name="email" type="email" required autoComplete="email" className="h-11" />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="password" className="text-xs text-muted-foreground">
+              Password
+            </Label>
+            <Input
+              id="password"
+              name="password"
+              type="password"
+              required
+              autoComplete="new-password"
+              className="h-11"
+            />
+          </div>
+          <Button type="submit" className="h-11 w-full" disabled={isPending}>
+            {isPending ? 'Creating account…' : 'Create account'}
+          </Button>
         </form>
-      </Card>
+
+        <p className="text-sm text-muted-foreground">
+          Already have an account?{' '}
+          <Link href="/login" className="text-foreground underline-offset-4 hover:underline">
+            Sign in
+          </Link>
+        </p>
+      </div>
     </div>
   );
 }

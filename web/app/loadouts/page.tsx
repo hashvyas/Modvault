@@ -5,6 +5,7 @@ import { withUser } from '@/lib/db';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { CreateLoadoutForm } from '@/components/create-loadout-form';
+import { ScoreMeter } from '@/components/score-meter';
 import { LoadoutImportForm } from '@/components/loadout-export-import';
 
 export const dynamic = 'force-dynamic';
@@ -133,14 +134,8 @@ export default async function LoadoutsDashboardPage() {
             <div className="grid gap-4 sm:grid-cols-2">
               {myLoadouts.map((l) => {
                 let badgeVariant: 'success' | 'warning' | 'destructive' = 'success';
-                let scoreRing = 'border-emerald-500/40 text-emerald-400 bg-emerald-500/10';
-                if (l.status === 'broken') {
-                  badgeVariant = 'destructive';
-                  scoreRing = 'border-rose-500/40 text-rose-400 bg-rose-500/10';
-                } else if (l.status === 'warnings') {
-                  badgeVariant = 'warning';
-                  scoreRing = 'border-amber-500/40 text-amber-400 bg-amber-500/10';
-                }
+                if (l.status === 'broken') badgeVariant = 'destructive';
+                else if (l.status === 'warnings') badgeVariant = 'warning';
 
                 return (
                   <Link key={l.loadout_id} href={`/loadouts/${l.loadout_id}`} className="group block">
@@ -175,11 +170,7 @@ export default async function LoadoutsDashboardPage() {
 
                         <div className="flex items-center justify-between pt-3 border-t border-border/50 text-xs">
                           <div className="flex items-center gap-2">
-                            <span
-                              className={`w-8 h-8 rounded-full border flex items-center justify-center font-mono font-bold text-xs ${scoreRing}`}
-                            >
-                              {l.score}
-                            </span>
+                            <ScoreMeter score={l.score} status={l.status} size={36} />
                             <span className="text-muted-foreground">{l.mod_count} mods</span>
                           </div>
                           <span className="text-cyan-400 font-semibold group-hover:translate-x-1 transition-transform inline-flex items-center text-xs">
