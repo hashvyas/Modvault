@@ -970,6 +970,14 @@ BEGIN
                 CONTINUE;
             END IF;
 
+            -- One version per mod: a second entry for an already imported mod is skipped.
+            IF EXISTS (SELECT 1 FROM loadout_mods lm
+                       JOIN mod_versions mv ON lm.version_id = mv.version_id
+                       WHERE lm.loadout_id = p_loadout_id AND mv.mod_id = v_mod_id) THEN
+                p_skipped := p_skipped + 1;
+                CONTINUE;
+            END IF;
+
             INSERT INTO loadout_mods (loadout_id, version_id, position, enabled)
             VALUES (p_loadout_id, v_version_id,
                     coalesce((v_entry ->> 'position')::int, 0),

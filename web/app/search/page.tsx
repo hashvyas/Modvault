@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { Download } from 'lucide-react';
 import { getSession } from '@/lib/session';
 import { withUser } from '@/lib/db';
 import { embed, toPgVector } from '@/lib/embed';
@@ -68,6 +69,14 @@ export default async function SearchPage({ searchParams }: Props) {
   let activeGameId: string | null = null;
 
   try {
+    // Start embedding now so it overlaps with the filter queries below.
+    const embeddingPromise = q
+      ? embed(q).then(toPgVector).catch((embErr) => {
+          console.error('Embedding generation failed, falling back to keyword search:', embErr);
+          return null;
+        })
+      : Promise.resolve(null);
+
     // 1. Load games and tags for filters
     const filterData = await withUser(session, async (client) => {
       const gRes = await client.query<GameFilter>(
@@ -101,13 +110,7 @@ export default async function SearchPage({ searchParams }: Props) {
 
     if (q) {
       // Compute vector embedding for query text
-      let pgEmbedding: string | null = null;
-      try {
-        const vector = await embed(q);
-        pgEmbedding = toPgVector(vector);
-      } catch (embErr) {
-        console.error('Embedding generation failed, falling back to keyword search:', embErr);
-      }
+      const pgEmbedding = await embeddingPromise;
 
       results = await withUser(session, async (client) => {
         const queryText = `
@@ -339,10 +342,10 @@ export default async function SearchPage({ searchParams }: Props) {
                   </div>
 
                   <div className="flex items-center justify-between text-xs pt-3 border-t border-border/50 text-muted-foreground">
-                    <span className="flex items-center gap-1 text-amber-400 font-medium">
-                      ★ {Number(mod.rating_avg).toFixed(1)}
+                    <span className="inline-flex items-center gap-1" title="Downloads">
+                      <Download className="size-3.5" aria-label="Downloads" />
+                      {Number(mod.download_count).toLocaleString()}
                     </span>
-                    <span>{Number(mod.download_count).toLocaleString()} downloads</span>
                   </div>
                 </CardContent>
               </Card>

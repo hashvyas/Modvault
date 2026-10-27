@@ -17,7 +17,7 @@ function LoginForm() {
     <div className="w-full max-w-sm space-y-10">
       <div className="space-y-2">
         <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">ModVault</p>
-        <h1 className="text-3xl font-light tracking-tight">Welcome back</h1>
+        <h1 className="text-3xl font-normal tracking-tight">Welcome back</h1>
       </div>
 
       <form action={formAction} className="space-y-6">

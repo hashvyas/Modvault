@@ -42,7 +42,7 @@ export function ScoreMeter({
         />
       </svg>
       <span
-        className="absolute inset-0 flex items-center justify-center font-light tabular-nums text-foreground"
+        className="absolute inset-0 flex items-center justify-center font-normal tabular-nums text-foreground"
         style={{ fontSize: size * 0.34 }}
       >
         {pct}

@@ -4,7 +4,6 @@ import React, { useActionState } from 'react';
 import Link from 'next/link';
 import {
   promoteVersionAction,
-  reviewModAction,
   addToLoadoutAction,
   type ActionState,
 } from '@/app/actions/mods';
@@ -24,15 +23,7 @@ interface LoadoutOption {
   loadout_id: string;
   name: string;
   game_version: string | null;
-}
-
-interface ReviewItem {
-  review_id: string;
-  user_id: string;
-  rating: number;
-  body: string | null;
-  created_at: string;
-  username: string;
+  current_version_id: string | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -144,6 +135,17 @@ export function AddToLoadoutPicker({
     addToLoadoutAction,
     {}
   );
+  const primaryVer = versions.find((v) => v.is_primary) ?? versions[0];
+  const [selectedId, setSelectedId] = React.useState(loadouts[0]?.loadout_id);
+  const [selectedVersionId, setSelectedVersionId] = React.useState(primaryVer?.version_id);
+  const currentVersionId = loadouts.find((l) => l.loadout_id === selectedId)?.current_version_id ?? null;
+  const alreadyAdded = currentVersionId === selectedVersionId;
+  const selectedSemver = versions.find((v) => v.version_id === selectedVersionId)?.semver;
+  const idleLabel = alreadyAdded
+    ? 'Already added'
+    : currentVersionId
+    ? `Switch to v${selectedSemver}`
+    : 'Add to Loadout';
 
   if (!isLoggedIn) {
     return (
@@ -167,14 +169,12 @@ export function AddToLoadoutPicker({
     );
   }
 
-  const primaryVer = versions.find((v) => v.is_primary) ?? versions[0];
-
   return (
     <div className="p-4 rounded-xl border border-border bg-card/40 space-y-3">
       <div className="flex items-center justify-between">
         <h4 className="text-sm font-semibold">Add to Loadout</h4>
         {state.success && (
-          <span className="text-xs text-emerald-400 font-medium">Added to loadout!</span>
+          <span className="text-xs text-emerald-400 font-medium">Loadout updated!</span>
         )}
       </div>
 
@@ -190,6 +190,8 @@ export function AddToLoadoutPicker({
         <select
           name="loadout_id"
           required
+          value={selectedId}
+          onChange={(e) => setSelectedId(e.target.value)}
           className="h-8 flex-1 rounded-md border border-border bg-card px-2.5 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-cyan-500"
         >
           {loadouts.map((l) => (
@@ -201,7 +203,8 @@ export function AddToLoadoutPicker({
 
         <select
           name="version_id"
-          defaultValue={primaryVer?.version_id}
+          value={selectedVersionId}
+          onChange={(e) => setSelectedVersionId(e.target.value)}
           className="h-8 w-36 rounded-md border border-border bg-card px-2.5 text-xs font-mono text-foreground focus:outline-none focus:ring-2 focus:ring-cyan-500"
         >
           {versions.map((v) => (
@@ -211,129 +214,10 @@ export function AddToLoadoutPicker({
           ))}
         </select>
 
-        <Button type="submit" disabled={isPending}>
-          {isPending ? 'Adding...' : 'Add to Loadout'}
+        <Button type="submit" disabled={isPending || alreadyAdded}>
+          {isPending ? 'Saving...' : idleLabel}
         </Button>
       </form>
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// 3. Reviews List and Review Form Component
-// ---------------------------------------------------------------------------
-export function ReviewSection({
-  modId,
-  reviews,
-  currentUserId,
-}: {
-  modId: string;
-  reviews: ReviewItem[];
-  currentUserId: string | null;
-}) {
-  const [state, formAction, isPending] = useActionState<ActionState, FormData>(
-    reviewModAction,
-    {}
-  );
-
-  const existingReview = reviews.find((r) => r.user_id === currentUserId);
-
-  return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h3 className="text-lg font-bold">Community Reviews</h3>
-          <p className="text-xs text-muted-foreground">{reviews.length} user reviews submitted</p>
-        </div>
-      </div>
-
-      {/* Review Submission Form */}
-      {currentUserId ? (
-        <form action={formAction} className="p-4 rounded-xl border border-border bg-card/40 space-y-3">
-          <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            {existingReview ? 'Update Your Review' : 'Write a Review'}
-          </h4>
-
-          {state.error && (
-            <div className="p-2.5 rounded bg-destructive/15 text-destructive text-xs">
-              {state.error}
-            </div>
-          )}
-
-          {state.success && (
-            <div className="p-2.5 rounded bg-emerald-500/15 text-emerald-400 text-xs">
-              Review saved successfully!
-            </div>
-          )}
-
-          <input type="hidden" name="mod_id" value={modId} />
-
-          <div className="flex items-center gap-3">
-            <label className="text-xs text-muted-foreground">Rating:</label>
-            <select
-              name="rating"
-              defaultValue={existingReview?.rating ?? 5}
-              className="h-8 rounded-md border border-border bg-card px-2 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-cyan-500"
-            >
-              <option value="5">★★★★★ (5 - Excellent)</option>
-              <option value="4">★★★★☆ (4 - Great)</option>
-              <option value="3">★★★☆☆ (3 - Average)</option>
-              <option value="2">★★☆☆☆ (2 - Poor)</option>
-              <option value="1">★☆☆☆☆ (1 - Terrible)</option>
-            </select>
-          </div>
-
-          <textarea
-            name="body"
-            defaultValue={existingReview?.body ?? ''}
-            rows={3}
-            placeholder="Share your experience with compatibility, performance, or bugs..."
-            className="w-full rounded-md border border-border bg-card p-2.5 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-cyan-500"
-          />
-
-          <Button
-            type="submit"
-            size="sm"
-            disabled={isPending}
-            className="bg-cyan-600 hover:bg-cyan-500 text-white font-medium"
-          >
-            {isPending ? 'Saving...' : existingReview ? 'Update Review' : 'Submit Review'}
-          </Button>
-        </form>
-      ) : (
-        <div className="p-4 rounded-xl border border-dashed border-border text-center text-xs text-muted-foreground">
-          <Link href="/login" className="text-cyan-400 hover:underline font-semibold">
-            Sign in
-          </Link>{' '}
-          to submit or update your review for this mod.
-        </div>
-      )}
-
-      {/* Review List */}
-      <div className="space-y-3">
-        {reviews.length === 0 ? (
-          <p className="text-xs text-muted-foreground italic">No reviews yet for this mod.</p>
-        ) : (
-          reviews.map((r) => (
-            <div
-              key={r.review_id}
-              className="p-3.5 rounded-lg border border-border/60 bg-card/25 space-y-1.5"
-            >
-              <div className="flex items-center justify-between text-xs">
-                <span className="font-semibold text-foreground">{r.username}</span>
-                <span className="text-amber-400 font-mono">
-                  {'★'.repeat(r.rating)}
-                  {'☆'.repeat(5 - r.rating)}
-                </span>
-              </div>
-              {r.body && <p className="text-xs text-muted-foreground leading-relaxed">{r.body}</p>}
-              <div className="text-[10px] text-muted-foreground/60">
-                {new Date(r.created_at).toLocaleDateString()}
-              </div>
-            </div>
-          ))
-        )}
-      </div>
     </div>
   );
 }

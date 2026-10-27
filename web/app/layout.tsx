@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import { Geist } from "next/font/google";
+import { JetBrains_Mono } from "next/font/google";
 import { cn } from "@/lib/utils";
 import { Navbar } from "@/components/navbar";
 
-const geist = Geist({ subsets: ["latin"], variable: "--font-sans" });
+const mono = JetBrains_Mono({ subsets: ["latin"], weight: "400", variable: "--font-sans" });
 
 export const metadata: Metadata = {
   title: "ModVault",
@@ -17,7 +17,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={cn("dark font-sans", geist.variable)} style={{ colorScheme: "dark" }}>
+    <html lang="en" className={cn("dark font-sans", mono.variable)} style={{ colorScheme: "dark" }}>
       <body className="min-h-screen bg-background text-foreground antialiased flex flex-col">
         <Navbar />
         <div className="flex-1">{children}</div>

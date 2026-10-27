@@ -7,7 +7,6 @@ import { Button } from '@/components/ui/button';
 import {
   VersionTable,
   AddToLoadoutPicker,
-  ReviewSection,
 } from '@/components/mod-actions';
 import {
   DependencyGraph,
@@ -63,15 +62,6 @@ interface CompatRow {
   verified_by_username: string | null;
 }
 
-interface ReviewRow {
-  review_id: string;
-  user_id: string;
-  rating: number;
-  body: string | null;
-  created_at: string;
-  username: string;
-}
-
 interface TagItem {
   tag_id: string;
   name: string;
@@ -82,6 +72,7 @@ interface LoadoutOption {
   loadout_id: string;
   name: string;
   game_version: string | null;
+  current_version_id: string | null;
 }
 
 type Props = {
@@ -97,7 +88,6 @@ export default async function ModDetailPage({ params }: Props) {
   let versions: VersionRow[] = [];
   let dependencies: DependencyNodeData[] = [];
   let compatRows: CompatRow[] = [];
-  let reviews: ReviewRow[] = [];
   let tags: TagItem[] = [];
   let userLoadouts: LoadoutOption[] = [];
 
@@ -165,17 +155,7 @@ export default async function ModDetailPage({ params }: Props) {
         [id]
       );
 
-      // 6. Fetch Reviews
-      const revRes = await client.query<ReviewRow>(
-        `SELECT r.review_id, r.user_id, r.rating, r.body, r.created_at::text, u.username
-         FROM reviews r
-         JOIN users u ON r.user_id = u.user_id
-         WHERE r.mod_id = $1
-         ORDER BY r.created_at DESC`,
-        [id]
-      );
-
-      // 7. Fetch Tags
+      // 6. Fetch Tags
       const tagRes = await client.query<TagItem>(
         `SELECT t.tag_id, t.name, t.slug
          FROM tags t
@@ -185,16 +165,20 @@ export default async function ModDetailPage({ params }: Props) {
         [id]
       );
 
-      // 8. Fetch User's Loadouts for this game (if logged in)
+      // 7. Fetch User's Loadouts for this game (if logged in)
       let loadouts: LoadoutOption[] = [];
       const currentUserId = session?.sub;
       if (currentUserId) {
         const lRes = await client.query<LoadoutOption>(
-          `SELECT loadout_id, name, game_version
-           FROM loadouts
-           WHERE user_id = $1 AND game_id = $2
-           ORDER BY name ASC`,
-          [currentUserId, modData.game_id]
+          `SELECT l.loadout_id, l.name, l.game_version,
+                  (SELECT lm.version_id FROM loadout_mods lm
+                   JOIN mod_versions mv ON lm.version_id = mv.version_id
+                   WHERE lm.loadout_id = l.loadout_id AND mv.mod_id = $3
+                   LIMIT 1) AS current_version_id
+           FROM loadouts l
+           WHERE l.user_id = $1 AND l.game_id = $2
+           ORDER BY l.name ASC`,
+          [currentUserId, modData.game_id, id]
         );
         loadouts = lRes.rows;
       }
@@ -205,7 +189,6 @@ export default async function ModDetailPage({ params }: Props) {
         versions: versionsRes.rows,
         dependencies: deps,
         compatRows: compatRes.rows,
-        reviews: revRes.rows,
         tags: tagRes.rows,
         userLoadouts: loadouts,
       };
@@ -220,7 +203,6 @@ export default async function ModDetailPage({ params }: Props) {
     versions = data.versions;
     dependencies = data.dependencies;
     compatRows = data.compatRows;
-    reviews = data.reviews;
     tags = data.tags;
     userLoadouts = data.userLoadouts;
   } catch (err) {
@@ -276,7 +258,7 @@ export default async function ModDetailPage({ params }: Props) {
                 className="inline-block"
               >
                 <Button variant="outline" size="sm" className="gap-1.5">
-                  View on Nexus Mods &nearr;
+                  View on Nexus Mods
                 </Button>
               </a>
             )}
@@ -308,15 +290,7 @@ export default async function ModDetailPage({ params }: Props) {
 
         {/* Mod Stats Strip (from fn_mod_stats) */}
         {stats && (
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 pt-4">
-            <div className="p-3 rounded-xl bg-card/40 border border-border text-center">
-              <div className="text-xs text-muted-foreground uppercase font-semibold">Rating</div>
-              <div className="text-lg font-bold text-amber-400 mt-0.5">
-                ★ {Number(stats.rating_avg).toFixed(1)}
-              </div>
-              <div className="text-[10px] text-muted-foreground">{stats.rating_count} reviews</div>
-            </div>
-
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-4">
             <div className="p-3 rounded-xl bg-card/40 border border-border text-center">
               <div className="text-xs text-muted-foreground uppercase font-semibold">Downloads</div>
               <div className="text-lg font-bold text-foreground mt-0.5">
@@ -458,15 +432,6 @@ export default async function ModDetailPage({ params }: Props) {
           </p>
         </div>
         <DependencyGraph dependencies={dependencies} />
-      </section>
-
-      {/* Reviews Section */}
-      <section className="border-t border-border pt-8">
-        <ReviewSection
-          modId={mod.mod_id}
-          reviews={reviews}
-          currentUserId={currentUserId}
-        />
       </section>
     </main>
   );

@@ -22,7 +22,7 @@ export function CreateLoadoutForm({ games }: { games: GameItem[] }) {
   return (
     <form action={formAction} className="space-y-4">
       {state.error && (
-        <div className="p-3 rounded-lg bg-destructive/15 text-destructive border border-destructive/30 text-xs">
+        <div className="p-3 rounded-lg bg-destructive/15 text-destructive border border-destructive/30 text-sm">
           {state.error}
         </div>
       )}
@@ -34,7 +34,7 @@ export function CreateLoadoutForm({ games }: { games: GameItem[] }) {
           name="name"
           required
           placeholder="e.g. My Stable Skyrim Modpack"
-          className="h-9 bg-card text-xs"
+          className="h-9 bg-card text-sm"
         />
       </div>
 
@@ -45,7 +45,7 @@ export function CreateLoadoutForm({ games }: { games: GameItem[] }) {
             id="game_id"
             name="game_id"
             required
-            className="w-full h-9 rounded-md border border-border bg-card px-2.5 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-cyan-500"
+            className="w-full h-9 rounded-md border border-border bg-card px-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-cyan-500"
           >
             <option value="">Select a game...</option>
             {games.map((g) => (
@@ -62,7 +62,7 @@ export function CreateLoadoutForm({ games }: { games: GameItem[] }) {
             id="game_version"
             name="game_version"
             placeholder="e.g. 1.6.1170"
-            className="h-9 font-mono bg-card text-xs"
+            className="h-9 font-mono bg-card text-sm"
           />
         </div>
       </div>
@@ -74,7 +74,7 @@ export function CreateLoadoutForm({ games }: { games: GameItem[] }) {
           name="description"
           rows={2}
           placeholder="Notes on the theme, performance targets, or ENB requirements..."
-          className="w-full rounded-md border border-border bg-card p-2 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-cyan-500"
+          className="w-full rounded-md border border-border bg-card p-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-cyan-500"
         />
       </div>
 
@@ -85,7 +85,7 @@ export function CreateLoadoutForm({ games }: { games: GameItem[] }) {
           type="checkbox"
           className="rounded border-border text-cyan-600 focus:ring-cyan-500"
         />
-        <Label htmlFor="is_public" className="cursor-pointer text-xs">
+        <Label htmlFor="is_public" className="cursor-pointer text-sm">
           Make this loadout public for community sharing
         </Label>
       </div>
@@ -93,7 +93,7 @@ export function CreateLoadoutForm({ games }: { games: GameItem[] }) {
       <Button
         type="submit"
         disabled={isPending}
-        className="w-full bg-cyan-600 hover:bg-cyan-500 text-white font-medium text-xs"
+        className="w-full bg-cyan-600 hover:bg-cyan-500 text-white font-medium text-sm"
       >
         {isPending ? 'Creating Loadout...' : 'Create Loadout'}
       </Button>

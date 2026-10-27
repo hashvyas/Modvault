@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { Download } from 'lucide-react';
 import { notFound } from 'next/navigation';
 import { getSession } from '@/lib/session';
 import { withUser } from '@/lib/db';
@@ -238,7 +239,6 @@ export default async function GameBrowsePage({ params, searchParams }: Props) {
             className="w-full h-8 rounded-md border border-border bg-card px-2.5 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-cyan-500"
           >
             <option value="downloads">Most Downloaded</option>
-            <option value="rating">Highest Rated</option>
             <option value="newest">Newest Added</option>
           </select>
         </div>
@@ -294,11 +294,10 @@ export default async function GameBrowsePage({ params, searchParams }: Props) {
                   </div>
 
                   <div className="flex items-center justify-between text-xs pt-3 border-t border-border/50 text-muted-foreground">
-                    <span className="flex items-center gap-1 text-amber-400 font-medium">
-                      ★ {Number(mod.rating_avg).toFixed(1)}
-                      <span className="text-muted-foreground text-[10px]">({mod.rating_count})</span>
+                    <span className="inline-flex items-center gap-1" title="Downloads">
+                      <Download className="size-3.5" aria-label="Downloads" />
+                      {Number(mod.download_count).toLocaleString()}
                     </span>
-                    <span>{Number(mod.download_count).toLocaleString()} dl</span>
                   </div>
                 </CardContent>
               </Card>

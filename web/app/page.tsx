@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { Download } from 'lucide-react';
 import { getSession } from '@/lib/session';
 import { withUser } from '@/lib/db';
 import { Button, buttonVariants } from '@/components/ui/button';
@@ -30,9 +31,6 @@ interface FeaturedModRow {
 interface LeaderboardRow {
   mod_id: string;
   mod_name: string;
-  rating_count: number;
-  rating_avg: number;
-  bayes_score: number;
   download_count: number;
   rank_in_game: number;
   game_name: string;
@@ -66,12 +64,15 @@ export default async function HomePage() {
       `);
 
       const leaderboardRes = await client.query<LeaderboardRow>(`
-        SELECT l.mod_id, l.mod_name, l.rating_count, l.rating_avg, l.bayes_score,
-               l.download_count, l.rank_in_game, g.name AS game_name, g.domain AS game_domain
-        FROM mv_game_leaderboard l
-        JOIN games g ON l.game_id = g.game_id
+        SELECT * FROM (
+          SELECT m.mod_id, m.name AS mod_name, m.download_count,
+                 row_number() OVER (PARTITION BY m.game_id ORDER BY m.download_count DESC, m.name)::int AS rank_in_game,
+                 g.name AS game_name, g.domain AS game_domain
+          FROM mods m
+          JOIN games g ON m.game_id = g.game_id
+        ) l
         WHERE l.rank_in_game <= 3
-        ORDER BY g.name, l.rank_in_game
+        ORDER BY l.game_name, l.rank_in_game
       `);
 
       return {
@@ -104,7 +105,7 @@ export default async function HomePage() {
           <Input
             type="search"
             name="q"
-            placeholder="Search mods by keywords or meaning (e.g., 'make the menus look better')..."
+            placeholder="Search mods..."
             className="bg-card/80 border-border focus-visible:ring-cyan-500"
           />
           <Button type="submit">Search</Button>
@@ -152,7 +153,7 @@ export default async function HomePage() {
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-2xl font-bold tracking-tight">Featured Mods</h2>
-              <p className="text-muted-foreground text-sm">Top verified community essentials with high ratings.</p>
+              <p className="text-muted-foreground text-sm">Top verified community essentials.</p>
             </div>
             <Link href="/search" className={buttonVariants({ variant: 'ghost', size: 'sm', className: 'text-xs' })}>
               View all mods &rarr;
@@ -180,10 +181,10 @@ export default async function HomePage() {
                       {mod.summary ?? 'No summary available.'}
                     </p>
                     <div className="flex items-center justify-between text-xs pt-2 border-t border-border/50 text-muted-foreground">
-                      <span className="flex items-center gap-1 font-medium text-amber-400">
-                        ★ {Number(mod.rating_avg).toFixed(1)}
+                      <span className="inline-flex items-center gap-1" title="Downloads">
+                        <Download className="size-3.5" aria-label="Downloads" />
+                        {Number(mod.download_count).toLocaleString()}
                       </span>
-                      <span>{Number(mod.download_count).toLocaleString()} downloads</span>
                     </div>
                   </CardContent>
                 </Card>
@@ -199,7 +200,7 @@ export default async function HomePage() {
           <div>
             <h2 className="text-2xl font-bold tracking-tight">Community Leaderboard</h2>
             <p className="text-muted-foreground text-sm">
-              Materialized leaderboard (<code className="text-xs text-cyan-400 font-mono">mv_game_leaderboard</code>) ranked by Bayesian rating and download popularity.
+              Most downloaded mods for each game.
             </p>
           </div>
           <div className="grid gap-6 md:grid-cols-3">
@@ -221,15 +222,7 @@ export default async function HomePage() {
                         className="flex items-center justify-between p-3.5 hover:bg-card/70 transition-colors group"
                       >
                         <div className="flex items-center space-x-3 overflow-hidden">
-                          <span
-                            className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${
-                              item.rank_in_game === 1
-                                ? 'bg-amber-500/20 text-amber-400 border border-amber-500/40'
-                                : item.rank_in_game === 2
-                                ? 'bg-slate-400/20 text-slate-300 border border-slate-400/40'
-                                : 'bg-amber-800/20 text-amber-600 border border-amber-700/40'
-                            }`}
-                          >
+                          <span className="w-6 shrink-0 text-xs text-muted-foreground tabular-nums">
                             #{item.rank_in_game}
                           </span>
                           <span className="text-sm font-medium truncate group-hover:text-cyan-300 transition-colors">
@@ -237,11 +230,9 @@ export default async function HomePage() {
                           </span>
                         </div>
                         <div className="text-right shrink-0 pl-2">
-                          <div className="text-xs font-mono font-semibold text-cyan-400">
-                            {Number(item.bayes_score).toFixed(2)}
-                          </div>
-                          <div className="text-[10px] text-muted-foreground">
-                            {Number(item.download_count).toLocaleString()} dl
+                          <div className="inline-flex items-center gap-1 text-xs text-muted-foreground" title="Downloads">
+                            <Download className="size-3" aria-label="Downloads" />
+                            {Number(item.download_count).toLocaleString()}
                           </div>
                         </div>
                       </Link>

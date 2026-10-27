@@ -223,7 +223,7 @@ export default async function LoadoutsDashboardPage() {
           <Card className="bg-card/40 border-border">
             <CardHeader className="pb-3">
               <CardTitle className="text-base">Create New Loadout</CardTitle>
-              <CardDescription className="text-xs">
+              <CardDescription className="text-sm">
                 Initialize an empty loadout for mod assignment and order management.
               </CardDescription>
             </CardHeader>
@@ -235,7 +235,7 @@ export default async function LoadoutsDashboardPage() {
           <Card className="bg-card/40 border-border">
             <CardHeader className="pb-3">
               <CardTitle className="text-base">Import Loadout</CardTitle>
-              <CardDescription className="text-xs">
+              <CardDescription className="text-sm">
                 Import from a <code className="font-mono text-cyan-400">modvault-loadout/1</code> JSON manifest.
               </CardDescription>
             </CardHeader>

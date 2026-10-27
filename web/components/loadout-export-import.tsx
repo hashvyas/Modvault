@@ -26,7 +26,7 @@ export function LoadoutImportForm() {
   return (
     <form action={formAction} className="space-y-4">
       {state.error && (
-        <div className="p-3 rounded-lg bg-destructive/15 text-destructive border border-destructive/30 text-xs">
+        <div className="p-3 rounded-lg bg-destructive/15 text-destructive border border-destructive/30 text-sm">
           {state.error}
         </div>
       )}
@@ -38,7 +38,7 @@ export function LoadoutImportForm() {
           type="file"
           accept=".json,application/json"
           onChange={handleFileUpload}
-          className="block w-full text-xs text-muted-foreground file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-cyan-600/20 file:text-cyan-300 hover:file:bg-cyan-600/30"
+          className="block w-full text-sm text-muted-foreground file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-cyan-600/20 file:text-cyan-300 hover:file:bg-cyan-600/30"
         />
       </div>
 
@@ -52,14 +52,14 @@ export function LoadoutImportForm() {
           required
           rows={6}
           placeholder='{"format": "modvault-loadout/1", "name": "My Loadout", ...}'
-          className="w-full rounded-md border border-border bg-card p-3 font-mono text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-cyan-500"
+          className="w-full rounded-md border border-border bg-card p-3 font-mono text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-cyan-500"
         />
       </div>
 
       <Button
         type="submit"
         disabled={isPending || !manifestText.trim()}
-        className="w-full bg-cyan-600 hover:bg-cyan-500 text-white font-medium text-xs"
+        className="w-full bg-cyan-600 hover:bg-cyan-500 text-white font-medium text-sm"
       >
         {isPending ? 'Importing Loadout...' : 'Import Loadout'}
       </Button>

@@ -156,12 +156,15 @@ export function DependencyGraph({ dependencies }: Props) {
         nodes={nodes}
         edges={edges}
         fitView
+        colorMode="dark"
+        proOptions={{ hideAttribution: true }}
+        style={{ background: 'transparent' }}
         nodesDraggable={true}
         nodesConnectable={false}
         elementsSelectable={true}
       >
         <Background color="#334155" gap={16} />
-        <Controls className="bg-card border-border fill-foreground" />
+        <Controls showInteractive={false} />
       </ReactFlow>
     </div>
   );

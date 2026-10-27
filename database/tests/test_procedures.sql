@@ -79,6 +79,17 @@ BEGIN
         ]}'::jsonb, l, s);
     ASSERT s = 1 AND (SELECT count(*) FROM loadout_mods WHERE loadout_id = l) = 1,
         'a failing insert was not skipped';
+
+    -- The same mod twice at different versions: the first entry wins.
+    CALL pr_import_loadout('{
+        "format": "modvault-loadout/1", "name": "FX import 3", "game_domain": "fx-game-a",
+        "mods": [
+            {"nexus_mod_id": "fx-2", "semver": "5.1.0", "position": 0},
+            {"nexus_mod_id": "fx-2", "semver": "5.2.0", "position": 1}
+        ]}'::jsonb, l, s);
+    ASSERT s = 1 AND (SELECT array_agg(version_id) FROM loadout_mods WHERE loadout_id = l)
+                     = ARRAY['d0000000-0000-0000-0000-000000000003'::uuid],
+        'a second version of the same mod was imported';
     RAISE NOTICE 'PASS 2 bad entries are skipped';
 END $$;
 ROLLBACK;
