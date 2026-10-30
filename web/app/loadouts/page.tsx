@@ -7,6 +7,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/com
 import { CreateLoadoutForm } from '@/components/create-loadout-form';
 import { ScoreMeter } from '@/components/score-meter';
 import { LoadoutImportForm } from '@/components/loadout-export-import';
+import { DirectImportButton } from '@/components/direct-import-button';
 
 export const dynamic = 'force-dynamic';
 
@@ -191,27 +192,38 @@ export default async function LoadoutsDashboardPage() {
               <h3 className="text-lg font-bold tracking-tight">Community Shared Loadouts</h3>
               <div className="grid gap-3 sm:grid-cols-2">
                 {publicLoadouts.map((pub) => (
-                  <Link key={pub.loadout_id} href={`/loadouts/${pub.loadout_id}`} className="group block">
-                    <div className="p-3.5 rounded-xl border border-border bg-card/30 hover:bg-card/60 transition-colors flex items-center justify-between">
-                      <div className="space-y-0.5 overflow-hidden">
-                        <div className="text-xs font-semibold truncate group-hover:text-cyan-300">
-                          {pub.name}
-                        </div>
-                        <div className="text-[10px] text-muted-foreground">
-                          By <span className="text-foreground">{pub.username}</span> &bull; {pub.game_name}
-                        </div>
+                  <div
+                    key={pub.loadout_id}
+                    className="p-3.5 rounded-xl border border-border bg-card/30 hover:bg-card/50 transition-colors flex items-center justify-between gap-3"
+                  >
+                    <Link
+                      href={`/loadouts/${pub.loadout_id}`}
+                      className="space-y-0.5 overflow-hidden flex-1 group"
+                    >
+                      <div className="text-xs font-semibold truncate group-hover:text-cyan-300 transition-colors">
+                        {pub.name}
                       </div>
-                      <div className="flex items-center gap-2 shrink-0">
-                        <span className="text-[10px] text-muted-foreground">{pub.mod_count} mods</span>
-                        <Badge
-                          variant={pub.status === 'healthy' ? 'success' : pub.status === 'broken' ? 'destructive' : 'warning'}
-                          className="text-[9px] uppercase"
-                        >
-                          {pub.status}
-                        </Badge>
+                      <div className="text-[10px] text-muted-foreground">
+                        By <span className="text-foreground">{pub.username}</span> &bull; {pub.game_name}
                       </div>
+                    </Link>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className="text-[10px] text-muted-foreground">{pub.mod_count} mods</span>
+                      <Badge
+                        variant={pub.status === 'healthy' ? 'success' : pub.status === 'broken' ? 'destructive' : 'warning'}
+                        className="text-[9px] uppercase"
+                      >
+                        {pub.status}
+                      </Badge>
+                      <DirectImportButton
+                        loadoutId={pub.loadout_id}
+                        size="xs"
+                        variant="secondary"
+                        label="Import"
+                        className="text-[10px] h-6 px-2 hover:bg-cyan-600 hover:text-white"
+                      />
                     </div>
-                  </Link>
+                  </div>
                 ))}
               </div>
             </div>

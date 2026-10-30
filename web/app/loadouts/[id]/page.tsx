@@ -4,6 +4,7 @@ import { getSession } from '@/lib/session';
 import { withUser } from '@/lib/db';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { DirectImportButton } from '@/components/direct-import-button';
 import {
   LoadoutModList,
   type LoadoutModItem,
@@ -224,6 +225,13 @@ export default async function LoadoutBuilderPage({ params, searchParams }: Props
         </div>
 
         <div className="flex items-center gap-2">
+          {!isOwner && (
+            <DirectImportButton
+              loadoutId={loadout.loadout_id}
+              size="sm"
+              className="bg-cyan-600 hover:bg-cyan-500 text-white font-medium text-xs"
+            />
+          )}
           <Link href={`/games/${loadout.game_domain}`}>
             <Button variant="outline" size="sm" className="text-xs">
               + Find Mods for {loadout.game_name}

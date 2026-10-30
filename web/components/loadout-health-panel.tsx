@@ -5,6 +5,7 @@ import {
   autoSortLoadoutAction,
   addMissingDependencyAction,
 } from '@/app/actions/loadouts';
+import { DirectImportButton } from '@/components/direct-import-button';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScoreMeter } from '@/components/score-meter';
@@ -139,6 +140,14 @@ export function LoadoutHealthPanel({
             >
               Auto-sort Load Order
             </Button>
+          )}
+
+          {!isOwner && (
+            <DirectImportButton
+              loadoutId={loadoutId}
+              size="sm"
+              className="bg-cyan-600 hover:bg-cyan-500 text-white font-medium text-xs"
+            />
           )}
 
           <Button
