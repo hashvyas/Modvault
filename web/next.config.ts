@@ -1,4 +1,13 @@
 import type { NextConfig } from "next";
+import path from "path";
+
+// Next only reads .env files from web/, but this project keeps its .env in the repo root.
+// Loading it here makes JWT_SECRET visible to the Edge middleware too. Existing variables win.
+try {
+  process.loadEnvFile(path.resolve(process.cwd(), "../.env"));
+} catch {
+  // No root .env (CI, Docker): rely on the real environment.
+}
 
 const nextConfig: NextConfig = {
   output: "standalone",
