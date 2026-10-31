@@ -37,7 +37,7 @@ def read_database_url():
                 url = value.strip().strip('"').strip("'")
                 if url:
                     return url
-    fail("DATABASE_URL is not set. Copy .env.example to .env in the repo root, or set the environment variable.")
+    fail("DATABASE_URL is not set. Create .env in the repo root, or set the environment variable.")
 
 
 def find_tool(name):
