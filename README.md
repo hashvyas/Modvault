@@ -4,8 +4,6 @@ ModVault checks a game mod loadout before you launch the game. Pick a game, buil
 
 Seeded with 45 real mods (15 each for Skyrim Special Edition, Fallout 4 and Stardew Valley) from the Nexus Mods API. Built for the PES University DBMS mini project.
 
-Live demo: TBD
-
 ## Architecture
 
 ```
@@ -54,8 +52,6 @@ Create a `.env` file in the repo root:
 DATABASE_URL=postgresql://modvault_owner:modvault_owner_dev@localhost:5432/modvault
 APP_DATABASE_URL=postgresql://modvault_app:modvault_app_dev@localhost:5432/modvault
 JWT_SECRET=<at least 32 characters, e.g. from: openssl rand -hex 32>
-ADMIN_PASSWORD=<pick one>
-CURATOR_PASSWORD=<pick one>
 ```
 
 The seed creates the `admin` and `curator` accounts with the passwords you choose here. Then run these three commands from the repo root:
