@@ -383,3 +383,82 @@ export async function importLoadoutAction(
 
   return { error: 'Failed to retrieve imported loadout.' };
 }
+
+
+const directImportSchema = z.object({
+  sourceLoadoutId: uuid,
+});
+
+/**
+ * Directly import a community-shared loadout into the current user's profile
+ */
+export async function directImportLoadoutAction(
+  sourceLoadoutId: string
+): Promise<ActionState> {
+  const session = await getSession();
+  if (!session) {
+    redirect(`/login?next=/loadouts/${sourceLoadoutId}`);
+  }
+
+  const parsed = directImportSchema.safeParse({ sourceLoadoutId });
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? 'Invalid loadout ID' };
+  }
+
+  let newLoadoutId: string | null = null;
+
+  try {
+    newLoadoutId = await withUser(session, async (client) => {
+      // 1. Fetch source loadout details, ensuring it is public or accessible
+      const sourceRes = await client.query<{
+        game_id: string;
+        name: string;
+        description: string | null;
+        game_version: string | null;
+      }>(
+        `SELECT game_id, name, description, game_version
+         FROM loadouts
+         WHERE loadout_id = $1 AND (is_public = TRUE OR user_id = fn_current_user_id() OR fn_current_role() = 'admin')`,
+        [parsed.data.sourceLoadoutId]
+      );
+
+      if (sourceRes.rows.length === 0) {
+        throw new Error('MODVAULT:NOT_FOUND: Community loadout not found or not public');
+      }
+
+      const source = sourceRes.rows[0];
+
+      // 2. Insert new loadout for the current user (private by default)
+      const newLoadoutRes = await client.query<{ loadout_id: string }>(
+        `INSERT INTO loadouts (user_id, game_id, name, description, game_version, is_public)
+         VALUES (fn_current_user_id(), $1, $2, $3, $4, FALSE)
+         RETURNING loadout_id`,
+        [source.game_id, source.name, source.description, source.game_version]
+      );
+
+      const createdId = newLoadoutRes.rows[0]?.loadout_id;
+      if (!createdId) throw new Error('Failed to create imported loadout');
+
+      // 3. Copy loadout_mods with sequential positions
+      await client.query(
+        `INSERT INTO loadout_mods (loadout_id, version_id, position, enabled)
+         SELECT $1, version_id, (row_number() over (ORDER BY position ASC, id ASC) - 1)::int, enabled
+         FROM loadout_mods
+         WHERE loadout_id = $2
+         ORDER BY position ASC, id ASC`,
+        [createdId, parsed.data.sourceLoadoutId]
+      );
+
+      return createdId;
+    });
+  } catch (err) {
+    return { error: formatErrorMessage(err) };
+  }
+
+  if (newLoadoutId) {
+    revalidatePath('/loadouts');
+    redirect(`/loadouts/${newLoadoutId}?imported=true`);
+  }
+
+  return { error: 'Failed to import loadout' };
+}
