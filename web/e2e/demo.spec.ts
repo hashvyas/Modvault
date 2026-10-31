@@ -17,6 +17,9 @@ try {
 }
 const OWNER_URL =
   process.env.DATABASE_URL ?? 'postgresql://modvault_owner:modvault_owner_dev@localhost:5432/modvault';
+// Set in .env (or the CI env) and seeded by db_reset.py; never committed.
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD ?? '';
+const CURATOR_PASSWORD = process.env.CURATOR_PASSWORD ?? '';
 
 const BROKEN_SKYRIM_UI = '74867771-c761-5ed8-9468-8358f8cad4f8';
 const PRIVATE_LOADOUT_NAME = 'Modder1 Private Vault';
@@ -217,7 +220,7 @@ test.describe.serial('ModVault Demo Script (E2E Steps 1 to 6)', () => {
 
   test('Step 4: Curator Marks Pair Incompatible on Matrix, Flipping Loadout to Broken', async ({ page }) => {
     // 1. Log in as curator
-    await loginAs(page, 'curator', 'REDACTED');
+    await loginAs(page, 'curator', CURATOR_PASSWORD);
 
     // 2. Navigate to Skyrim SE Compatibility Heatmap
     await page.goto('/games/skyrimspecialedition/compat');
@@ -259,7 +262,7 @@ test.describe.serial('ModVault Demo Script (E2E Steps 1 to 6)', () => {
 
   test('Step 5: Admin Inspects Audit Log and Views Side-by-Side Diff', async ({ page }) => {
     // 1. Log in as admin
-    await loginAs(page, 'admin', 'REDACTED');
+    await loginAs(page, 'admin', ADMIN_PASSWORD);
 
     // 2. Navigate to /admin
     await page.goto('/admin');
@@ -356,7 +359,7 @@ test.describe.serial('ModVault Demo Script (E2E Steps 1 to 6)', () => {
     await page.screenshot({ path: path.join(screenshotsDir, 'loadouts.png') });
 
     // 6. Admin audit page (as admin)
-    await loginAs(page, 'admin', 'REDACTED');
+    await loginAs(page, 'admin', ADMIN_PASSWORD);
     await page.goto('/admin');
     await page.screenshot({ path: path.join(screenshotsDir, 'admin.png') });
   });

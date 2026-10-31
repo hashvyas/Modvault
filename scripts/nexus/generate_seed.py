@@ -125,12 +125,25 @@ def main():
         user_id_by_username[username] = u_id
         email = u["email"]
         role = u["role"]
-        pw = u["password"]
+        if "password_env" in u:
+            # Privileged passwords come from the environment so they never live in the repo.
+            env_name = u["password_env"]
+            var = env_name.lower()
+            lines += [
+                f"\\getenv {var} {env_name}",
+                f"\\if :{{?{var}}}",
+                "\\else",
+                f"DO $$ BEGIN RAISE EXCEPTION '{env_name} is not set. Add it to .env or export it before seeding.'; END $$;",
+                "\\endif",
+            ]
+            pw_sql = f":'{var}'"
+        else:
+            pw_sql = sql_str(u["password"])
 
         lines.append(
             f"INSERT INTO users (user_id, username, email, password_hash, role, is_active) VALUES ("
             f"{sql_str(u_id)}, {sql_str(username)}, {sql_str(email)}, "
-            f"crypt({sql_str(pw)}, gen_salt('bf', 10)), {sql_str(role)}::user_role_enum, TRUE"
+            f"crypt({pw_sql}, gen_salt('bf', 10)), {sql_str(role)}::user_role_enum, TRUE"
             f") ON CONFLICT (username) DO NOTHING;"
         )
     lines.append("")

@@ -12,8 +12,18 @@ INSERT INTO games (game_id, name, domain, nexus_game_id, current_version) VALUES
 INSERT INTO games (game_id, name, domain, nexus_game_id, current_version) VALUES ('594f4a02-cabc-5fee-b081-1a47ab9554d9', 'Stardew Valley', 'stardewvalley', '1303', '1.6.8') ON CONFLICT (domain) DO UPDATE SET current_version = EXCLUDED.current_version;
 
 -- 2. USERS
-INSERT INTO users (user_id, username, email, password_hash, role, is_active) VALUES ('72b724ef-39ba-579c-a239-76135fad459c', 'admin', 'admin@modvault.dev', crypt('REDACTED', gen_salt('bf', 10)), 'admin'::user_role_enum, TRUE) ON CONFLICT (username) DO NOTHING;
-INSERT INTO users (user_id, username, email, password_hash, role, is_active) VALUES ('06144ea0-f614-5962-95b1-b59fd16c3961', 'curator', 'curator@modvault.dev', crypt('REDACTED', gen_salt('bf', 10)), 'curator'::user_role_enum, TRUE) ON CONFLICT (username) DO NOTHING;
+\getenv admin_password ADMIN_PASSWORD
+\if :{?admin_password}
+\else
+DO $$ BEGIN RAISE EXCEPTION 'ADMIN_PASSWORD is not set. Add it to .env or export it before seeding.'; END $$;
+\endif
+INSERT INTO users (user_id, username, email, password_hash, role, is_active) VALUES ('72b724ef-39ba-579c-a239-76135fad459c', 'admin', 'admin@modvault.dev', crypt(:'admin_password', gen_salt('bf', 10)), 'admin'::user_role_enum, TRUE) ON CONFLICT (username) DO NOTHING;
+\getenv curator_password CURATOR_PASSWORD
+\if :{?curator_password}
+\else
+DO $$ BEGIN RAISE EXCEPTION 'CURATOR_PASSWORD is not set. Add it to .env or export it before seeding.'; END $$;
+\endif
+INSERT INTO users (user_id, username, email, password_hash, role, is_active) VALUES ('06144ea0-f614-5962-95b1-b59fd16c3961', 'curator', 'curator@modvault.dev', crypt(:'curator_password', gen_salt('bf', 10)), 'curator'::user_role_enum, TRUE) ON CONFLICT (username) DO NOTHING;
 INSERT INTO users (user_id, username, email, password_hash, role, is_active) VALUES ('10a9b262-706c-5480-a89f-2f6813238cf9', 'modder1', 'modder1@modvault.dev', crypt('REDACTED', gen_salt('bf', 10)), 'modder'::user_role_enum, TRUE) ON CONFLICT (username) DO NOTHING;
 INSERT INTO users (user_id, username, email, password_hash, role, is_active) VALUES ('c886cd96-d931-564f-9870-54207c78ca27', 'modder2', 'modder2@modvault.dev', crypt('REDACTED', gen_salt('bf', 10)), 'modder'::user_role_enum, TRUE) ON CONFLICT (username) DO NOTHING;
 INSERT INTO users (user_id, username, email, password_hash, role, is_active) VALUES ('7b31433f-92d7-54e0-ade2-964aff22e069', 'modder3', 'modder3@modvault.dev', crypt('REDACTED', gen_salt('bf', 10)), 'modder'::user_role_enum, TRUE) ON CONFLICT (username) DO NOTHING;

@@ -30,6 +30,9 @@ jobs:
       DATABASE_URL: postgresql://modvault_owner:modvault_owner_dev@localhost:5432/modvault
       APP_DATABASE_URL: postgresql://modvault_app:modvault_app_dev@localhost:5432/modvault
       JWT_SECRET: ci-only-not-a-real-secret-0000000000000000000000000000000000000000
+      # Throwaway CI database only; real passwords live in each developer's .env.
+      ADMIN_PASSWORD: ci-admin-password
+      CURATOR_PASSWORD: ci-curator-password
 
     steps:
       - name: Checkout repository

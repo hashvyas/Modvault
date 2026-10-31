@@ -4,7 +4,8 @@ Usage (from any folder):
     python scripts/db_reset.py               # rebuild
     python scripts/db_reset.py --with-tests  # rebuild, then run database/tests/run_tests.sql
 
-DATABASE_URL comes from the environment when set (CI), otherwise from .env in the repo root.
+DATABASE_URL, ADMIN_PASSWORD and CURATOR_PASSWORD come from the environment when set (CI),
+otherwise from .env in the repo root.
 Standard library only. Drops all data in schema public.
 """
 
@@ -25,19 +26,19 @@ def fail(message):
     sys.exit(1)
 
 
-def read_database_url():
-    url = os.environ.get("DATABASE_URL", "").strip()
-    if url:
-        return url
+def read_setting(name):
+    value = os.environ.get(name, "").strip()
+    if value:
+        return value
     env_file = REPO_ROOT / ".env"
     if env_file.is_file():
         for line in env_file.read_text(encoding="utf-8-sig").splitlines():
             key, sep, value = line.strip().partition("=")
-            if sep and key.strip() == "DATABASE_URL":
-                url = value.strip().strip('"').strip("'")
-                if url:
-                    return url
-    fail("DATABASE_URL is not set. Create .env in the repo root, or set the environment variable.")
+            if sep and key.strip() == name:
+                value = value.strip().strip('"').strip("'")
+                if value:
+                    return value
+    fail(f"{name} is not set. Add it to .env in the repo root, or set the environment variable.")
 
 
 def find_tool(name):
@@ -62,11 +63,17 @@ def main():
     parser.add_argument("--with-tests", action="store_true", help="also run database/tests/run_tests.sql")
     args = parser.parse_args()
 
-    url = read_database_url()
+    url = read_setting("DATABASE_URL")
     psql = find_tool("psql")
     pg_isready = find_tool("pg_isready")
 
-    env = dict(os.environ, PGCLIENTENCODING="UTF8")
+    # seed.sql reads the admin and curator passwords with \getenv.
+    env = dict(
+        os.environ,
+        PGCLIENTENCODING="UTF8",
+        ADMIN_PASSWORD=read_setting("ADMIN_PASSWORD"),
+        CURATOR_PASSWORD=read_setting("CURATOR_PASSWORD"),
+    )
     psql_base = [psql, "-X", "-v", "ON_ERROR_STOP=1", "-d", url]
 
     run([pg_isready, "-d", url], env, "checking server with pg_isready")
