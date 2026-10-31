@@ -398,7 +398,7 @@ WITH src AS (
 ),
 new_l AS (
     INSERT INTO loadouts (user_id, game_id, name, description, game_version)
-    SELECT (SELECT user_id FROM users WHERE username = 'modder2'),
+    SELECT (SELECT user_id FROM users WHERE username = 'admin'),
            src.game_id, src.name || ' (copy)', src.description, src.game_version
     FROM   src
     RETURNING loadout_id

@@ -20,10 +20,11 @@ const OWNER_URL =
 // Set in .env (or the CI env) and seeded by db_reset.py; never committed.
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD ?? '';
 const CURATOR_PASSWORD = process.env.CURATOR_PASSWORD ?? '';
-const MODDER_PASSWORD = process.env.MODDER_PASSWORD ?? '';
+// Throwaway modder for the RLS check in step 6; created in beforeAll, deleted in afterAll.
+const VIEWER = { username: 'e2e_viewer', password: `e2e-${Date.now()}-${Math.random().toString(36).slice(2)}` };
 
-const BROKEN_SKYRIM_UI = '74867771-c761-5ed8-9468-8358f8cad4f8';
-const PRIVATE_LOADOUT_NAME = 'Modder1 Private Vault';
+const BROKEN_SKYRIM_UI = '91e9a578-4e52-5004-b8f0-1bbb92fb39c7';
+const PRIVATE_LOADOUT_NAME = 'Curator Private Vault';
 // Step 4 marks this pair incompatible. MCM Helper is only in Broken Skyrim UI, so no other seeded loadout changes.
 const PAIR_MODS = ['MCM Helper', 'Better Dialogue Controls'];
 
@@ -83,6 +84,12 @@ test.describe.serial('ModVault Demo Script (E2E Steps 1 to 6)', () => {
         [a, b]
       );
       snapshot = { rows: rows.rows, pair: { a, b, row: pair.rows[0] ?? null } };
+      await db.query('DELETE FROM users WHERE username = $1', [VIEWER.username]);
+      await db.query('SELECT fn_register_user($1, $2, $3)', [
+        VIEWER.username,
+        `${VIEWER.username}@example.com`,
+        VIEWER.password,
+      ]);
     } finally {
       await db.end();
     }
@@ -94,6 +101,7 @@ test.describe.serial('ModVault Demo Script (E2E Steps 1 to 6)', () => {
     try {
       await db.query('BEGIN');
       await db.query('DELETE FROM loadouts WHERE name = $1', [PRIVATE_LOADOUT_NAME]);
+      await db.query('DELETE FROM users WHERE username = $1', [VIEWER.username]);
       if (snapshot) {
         await db.query(
           'DELETE FROM loadout_mods WHERE loadout_id = $1 AND NOT (version_id = ANY($2::uuid[]))',
@@ -151,8 +159,8 @@ test.describe.serial('ModVault Demo Script (E2E Steps 1 to 6)', () => {
   });
 
   test('Step 2: Open Broken Skyrim Loadout and Verify Diagnostics', async ({ page }) => {
-    // 1. Log in as modder1
-    await loginAs(page, 'modder1', MODDER_PASSWORD);
+    // 1. Log in as curator, who owns the seeded loadouts
+    await loginAs(page, 'curator', CURATOR_PASSWORD);
 
     // 2. Navigate to loadouts manager
     await page.goto('/loadouts');
@@ -184,11 +192,11 @@ test.describe.serial('ModVault Demo Script (E2E Steps 1 to 6)', () => {
   });
 
   test('Step 3: Add Missing Dependency and Auto-sort Load Order', async ({ page }) => {
-    // Log in as modder1 if session is not preserved
-    await loginAs(page, 'modder1', MODDER_PASSWORD);
+    // Log in as curator (owner) if session is not preserved
+    await loginAs(page, 'curator', CURATOR_PASSWORD);
 
     // Open Broken Skyrim UI
-    await page.goto('/loadouts/74867771-c761-5ed8-9468-8358f8cad4f8');
+    await page.goto(`/loadouts/${BROKEN_SKYRIM_UI}`);
     await expect(page.locator('h1')).toContainText('Broken Skyrim UI');
 
     // Click "Add SkyUI" to resolve missing dependency
@@ -292,9 +300,9 @@ test.describe.serial('ModVault Demo Script (E2E Steps 1 to 6)', () => {
     await page.click('button:has-text("Close Diff")');
   });
 
-  test('Step 6: Modder2 Cannot View Modder1 Private Loadout (RLS Enforcement)', async ({ page }) => {
-    // 1. Log in as modder1 to create a private loadout
-    await loginAs(page, 'modder1', MODDER_PASSWORD);
+  test('Step 6: Another User Cannot View Curator Private Loadout (RLS Enforcement)', async ({ page }) => {
+    // 1. Log in as curator to create a private loadout
+    await loginAs(page, 'curator', CURATOR_PASSWORD);
 
     // Navigate to /loadouts and create private loadout
     await page.goto('/loadouts');
@@ -305,7 +313,7 @@ test.describe.serial('ModVault Demo Script (E2E Steps 1 to 6)', () => {
     await gameSelect.selectOption({ label: 'Skyrim Special Edition' });
 
     await page.fill('input[name="game_version"]', '1.6.1170');
-    await page.fill('textarea[name="description"]', 'Private loadout owned exclusively by modder1');
+    await page.fill('textarea[name="description"]', 'Private loadout owned exclusively by curator');
 
     // Uncheck is_public to make it private
     const isPublicCheckbox = page.locator('input[name="is_public"]');
@@ -319,16 +327,16 @@ test.describe.serial('ModVault Demo Script (E2E Steps 1 to 6)', () => {
     await page.waitForURL((url) => url.pathname.includes('/loadouts/'));
     createdPrivateLoadoutUrl = page.url();
     expect(createdPrivateLoadoutUrl).toContain('/loadouts/');
-    await expect(page.locator('h1')).toContainText('Modder1 Private Vault');
+    await expect(page.locator('h1')).toContainText(PRIVATE_LOADOUT_NAME);
 
-    // 2. Log in as modder2
-    await loginAs(page, 'modder2', MODDER_PASSWORD);
+    // 2. Log in as the throwaway modder
+    await loginAs(page, VIEWER.username, VIEWER.password);
 
     // 3. Confirm private loadout is NOT visible in loadouts dashboard
     await page.goto('/loadouts');
-    await expect(page.locator('text=Modder1 Private Vault')).not.toBeVisible();
+    await expect(page.locator(`text=${PRIVATE_LOADOUT_NAME}`)).not.toBeVisible();
 
-    // 4. Confirm direct navigation to modder1 private loadout is denied (404 Not Found)
+    // 4. Confirm direct navigation to curator's private loadout is denied (404 Not Found)
     await page.goto(createdPrivateLoadoutUrl);
     await expect(page.getByRole('heading', { name: '404' })).toBeVisible();
 
@@ -350,8 +358,8 @@ test.describe.serial('ModVault Demo Script (E2E Steps 1 to 6)', () => {
     await expect(page.locator('h1')).toBeVisible();
     await page.screenshot({ path: path.join(screenshotsDir, 'mod-detail.png') });
 
-    // 4. Mod publish page (as modder1)
-    await loginAs(page, 'modder1', MODDER_PASSWORD);
+    // 4. Mod publish page (as curator)
+    await loginAs(page, 'curator', CURATOR_PASSWORD);
     await page.goto('/mods/new');
     await page.screenshot({ path: path.join(screenshotsDir, 'mod-publish.png') });
 

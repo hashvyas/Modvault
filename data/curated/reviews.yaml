@@ -1,45 +1,45 @@
 # Skyrim Reviews
-- { user: modder1, mod: "skyrimspecialedition:12604", rating: 5, body: "Essential mod for PC Skyrim. Vanilla UI is unplayable." }
-- { user: modder2, mod: "skyrimspecialedition:12604", rating: 5, body: "Clean, fast, and MCM is indispensable." }
+- { user: curator, mod: "skyrimspecialedition:12604", rating: 5, body: "Essential mod for PC Skyrim. Vanilla UI is unplayable." }
+- { user: admin, mod: "skyrimspecialedition:12604", rating: 5, body: "Clean, fast, and MCM is indispensable." }
 - { user: curator, mod: "skyrimspecialedition:266", rating: 5, body: "Fixes thousands of bugs left behind by Bethesda." }
-- { user: modder3, mod: "skyrimspecialedition:266", rating: 5, body: "First thing installed on every playthrough." }
-- { user: modder4, mod: "skyrimspecialedition:32444", rating: 5, body: "Keeps DLL mods working without rebuilding across versions." }
-- { user: modder5, mod: "skyrimspecialedition:17230", rating: 5, body: "Massive stability boost and memory fixes." }
-- { user: modder6, mod: "skyrimspecialedition:659", rating: 5, body: "Drastically improves clutter and architectural 3D models." }
+- { user: admin, mod: "skyrimspecialedition:266", rating: 5, body: "First thing installed on every playthrough." }
+- { user: curator, mod: "skyrimspecialedition:32444", rating: 5, body: "Keeps DLL mods working without rebuilding across versions." }
+- { user: curator, mod: "skyrimspecialedition:17230", rating: 5, body: "Massive stability boost and memory fixes." }
+- { user: curator, mod: "skyrimspecialedition:659", rating: 5, body: "Drastically improves clutter and architectural 3D models." }
 - { user: admin, mod: "skyrimspecialedition:272", rating: 5, body: "Great for testing and skipping the wagon ride." }
-- { user: modder1, mod: "skyrimspecialedition:19080", rating: 5, body: "The gold standard for character customization." }
-- { user: modder2, mod: "skyrimspecialedition:1137", rating: 5, body: "Transforms perk trees into deep, rewarding builds." }
-- { user: modder3, mod: "skyrimspecialedition:1090", rating: 5, body: "Balanced, creative spells that fit lore perfectly." }
-- { user: modder4, mod: "skyrimspecialedition:667", rating: 4, body: "Great camping system, very immersive." }
-- { user: modder5, mod: "skyrimspecialedition:671", rating: 4, body: "Cold mechanics are brutal but rewarding." }
-- { user: modder6, mod: "skyrimspecialedition:13048", rating: 5, body: "Rock-solid script functions for survival mods." }
+- { user: curator, mod: "skyrimspecialedition:19080", rating: 5, body: "The gold standard for character customization." }
+- { user: curator, mod: "skyrimspecialedition:1137", rating: 5, body: "Transforms perk trees into deep, rewarding builds." }
+- { user: curator, mod: "skyrimspecialedition:1090", rating: 5, body: "Balanced, creative spells that fit lore perfectly." }
+- { user: curator, mod: "skyrimspecialedition:667", rating: 4, body: "Great camping system, very immersive." }
+- { user: curator, mod: "skyrimspecialedition:671", rating: 4, body: "Cold mechanics are brutal but rewarding." }
+- { user: curator, mod: "skyrimspecialedition:13048", rating: 5, body: "Rock-solid script functions for survival mods." }
 - { user: curator, mod: "skyrimspecialedition:1429", rating: 5, body: "Fixes mouse misalignment in conversation menus." }
 - { user: admin, mod: "skyrimspecialedition:5804", rating: 4, body: "Clear roads on the map make navigation so much easier." }
-- { user: modder1, mod: "skyrimspecialedition:53000", rating: 5, body: "Makes JSON settings for SkyUI menus trivial to load." }
+- { user: curator, mod: "skyrimspecialedition:53000", rating: 5, body: "Makes JSON settings for SkyUI menus trivial to load." }
 
 # Fallout 4 Reviews
-- { user: modder2, mod: "fallout4:4598", rating: 5, body: "Critical bug fixes for Commonwealth quests and workshop scripts." }
+- { user: curator, mod: "fallout4:4598", rating: 5, body: "Critical bug fixes for Commonwealth quests and workshop scripts." }
 - { user: curator, mod: "fallout4:42147", rating: 5, body: "Indispensable script extender for complex FO4 mods." }
-- { user: modder3, mod: "fallout4:21497", rating: 5, body: "Standard in-game settings configuration for Fallout 4." }
-- { user: modder4, mod: "fallout4:6091", rating: 3, body: "Broad framework, necessary for older armors." }
-- { user: modder5, mod: "fallout4:2228", rating: 4, body: "Lets you layer armor and mod any outfit." }
-- { user: modder6, mod: "fallout4:9424", rating: 5, body: "Best settlement builder mod ever made." }
+- { user: curator, mod: "fallout4:21497", rating: 5, body: "Standard in-game settings configuration for Fallout 4." }
+- { user: curator, mod: "fallout4:6091", rating: 3, body: "Broad framework, necessary for older armors." }
+- { user: curator, mod: "fallout4:2228", rating: 4, body: "Lets you layer armor and mod any outfit." }
+- { user: curator, mod: "fallout4:9424", rating: 5, body: "Best settlement builder mod ever made." }
 - { user: admin, mod: "fallout4:1235", rating: 5, body: "Shows exact dialogue instead of ambiguous 4-word wheel." }
-- { user: modder1, mod: "fallout4:18946", rating: 5, body: "Bypasses the Shaun story so you can roleplay anything." }
+- { user: curator, mod: "fallout4:18946", rating: 5, body: "Bypasses the Shaun story so you can roleplay anything." }
 - { user: curator, mod: "fallout4:35004", rating: 5, body: "Fast, multithreaded workshop scripts that prevent lag." }
-- { user: modder2, mod: "fallout4:47976", rating: 5, body: "Unbelievable depth and voiced story for settlements." }
-- { user: modder3, mod: "fallout4:4472", rating: 5, body: "Atmospheric radstorms and intense weather sound effects." }
-- { user: modder4, mod: "fallout4:25714", rating: 5, body: "HD landscape textures with better performance than vanilla." }
+- { user: curator, mod: "fallout4:47976", rating: 5, body: "Unbelievable depth and voiced story for settlements." }
+- { user: curator, mod: "fallout4:4472", rating: 5, body: "Atmospheric radstorms and intense weather sound effects." }
+- { user: curator, mod: "fallout4:25714", rating: 5, body: "HD landscape textures with better performance than vanilla." }
 
 # Stardew Valley Reviews
-- { user: modder5, mod: "stardewvalley:2400", rating: 5, body: "The backbone of Stardew modding. Incredibly reliable." }
-- { user: modder6, mod: "stardewvalley:1915", rating: 5, body: "The cleanest way to add assets without touching xnb files." }
+- { user: curator, mod: "stardewvalley:2400", rating: 5, body: "The backbone of Stardew modding. Incredibly reliable." }
+- { user: curator, mod: "stardewvalley:1915", rating: 5, body: "The cleanest way to add assets without touching xnb files." }
 - { user: admin, mod: "stardewvalley:5098", rating: 5, body: "In-game settings screen for all Stardew mods." }
 - { user: curator, mod: "stardewvalley:3753", rating: 5, body: "Feels like an official massive expansion pack." }
-- { user: modder1, mod: "stardewvalley:1063", rating: 5, body: "Automated chest-to-machine feeding saves endless clicking." }
-- { user: modder2, mod: "stardewvalley:541", rating: 5, body: "Press F1 to know anything about any villager or crop." }
-- { user: modder3, mod: "stardewvalley:1401", rating: 5, body: "Endgame farming utility that saves hours of field work." }
-- { user: modder4, mod: "stardewvalley:4", rating: 4, body: "Helpful utility for testing and quality of life tweaks." }
-- { user: modder5, mod: "stardewvalley:93", rating: 4, body: "Essential tool for mod development and asset testing." }
-- { user: modder6, mod: "stardewvalley:239", rating: 5, body: "Never lose track of where Sebastian or Leah wandered." }
+- { user: curator, mod: "stardewvalley:1063", rating: 5, body: "Automated chest-to-machine feeding saves endless clicking." }
+- { user: curator, mod: "stardewvalley:541", rating: 5, body: "Press F1 to know anything about any villager or crop." }
+- { user: curator, mod: "stardewvalley:1401", rating: 5, body: "Endgame farming utility that saves hours of field work." }
+- { user: curator, mod: "stardewvalley:4", rating: 4, body: "Helpful utility for testing and quality of life tweaks." }
+- { user: curator, mod: "stardewvalley:93", rating: 4, body: "Essential tool for mod development and asset testing." }
+- { user: curator, mod: "stardewvalley:239", rating: 5, body: "Never lose track of where Sebastian or Leah wandered." }
 - { user: curator, mod: "stardewvalley:5255", rating: 5, body: "Gentle, earthy palette that reduces eye strain." }

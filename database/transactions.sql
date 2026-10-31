@@ -50,7 +50,7 @@ SET client_encoding = 'UTF8';
 -- Look up the seed rows used below once, as psql variables (:'name').
 SELECT g.game_id                                                AS skyrim,
        (SELECT user_id FROM users WHERE username = 'curator')  AS curator,
-       (SELECT user_id FROM users WHERE username = 'modder1')  AS modder1,
+       (SELECT user_id FROM users WHERE username = 'admin')    AS admin,
        (SELECT mod_id  FROM mods  WHERE name = 'SkyUI')        AS skyui_mod,
        (SELECT mod_id  FROM mods  WHERE name = 'RaceMenu')     AS racemenu_mod,
        (SELECT mod_id  FROM mods  WHERE name = 'Better Settlers') AS settlers_mod
@@ -326,7 +326,7 @@ BEGIN;
 \set ON_ERROR_STOP off
 -- Expected: ERROR:  new row for relation "reviews" violates check constraint "chk_reviews_rating"
 INSERT INTO reviews (user_id, mod_id, rating, body)
-VALUES (:'modder1', :'settlers_mod', 6, 'Great mod!');
+VALUES (:'admin', :'settlers_mod', 6, 'Great mod!');
 \set ON_ERROR_STOP on
 -- Expected: ROLLBACK. COMMIT on an aborted transaction rolls it back.
 COMMIT;
@@ -334,13 +334,13 @@ COMMIT;
 -- Transaction 2: the corrected retry.
 BEGIN;
 INSERT INTO reviews (user_id, mod_id, rating, body)
-VALUES (:'modder1', :'settlers_mod', 5, 'Great mod!');
+VALUES (:'admin', :'settlers_mod', 5, 'Great mod!');
 COMMIT;
 
 -- Expected: one review, rating 5; the rating trigger updated the mod: 5.00 | 1
 SELECT r.rating, m.rating_avg, m.rating_count
 FROM   reviews r JOIN mods m ON m.mod_id = r.mod_id
-WHERE  r.user_id = :'modder1' AND r.mod_id = :'settlers_mod';
+WHERE  r.user_id = :'admin' AND r.mod_id = :'settlers_mod';
 
 
 -- =============================================================================
@@ -395,7 +395,7 @@ ROLLBACK;
 -- =============================================================================
 
 BEGIN;
-DELETE FROM reviews WHERE user_id = :'modder1' AND mod_id = :'settlers_mod';
+DELETE FROM reviews WHERE user_id = :'admin' AND mod_id = :'settlers_mod';
 DELETE FROM compatibility_matrix WHERE conflict_detail ->> 'reason' LIKE 'demo batch record %';
 DELETE FROM mods WHERE name = 'Demo: Atomic Publish';   -- its version goes by ON DELETE CASCADE
 COMMIT;

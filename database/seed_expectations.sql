@@ -14,7 +14,7 @@ BEGIN
     ASSERT v_cnt = 3, 'Expected 3 games, got ' || v_cnt;
 
     SELECT count(*) INTO v_cnt FROM users;
-    ASSERT v_cnt = 8, 'Expected 8 users, got ' || v_cnt;
+    ASSERT v_cnt = 2, 'Expected 2 users, got ' || v_cnt;
 
     SELECT count(*) INTO v_cnt FROM tags;
     ASSERT v_cnt = 18, 'Expected 18 tags, got ' || v_cnt;
@@ -29,20 +29,20 @@ BEGIN
     ASSERT v_cnt = 7, 'Expected 7 loadouts, got ' || v_cnt;
 
     -- 2. Loadout health status expectations (requires P1 functions from Sync 2)
-    SELECT status INTO v_status FROM loadout_health_view WHERE loadout_id = '74867771-c761-5ed8-9468-8358f8cad4f8'::uuid;
+    SELECT status INTO v_status FROM loadout_health_view WHERE loadout_id = '91e9a578-4e52-5004-b8f0-1bbb92fb39c7'::uuid;
     ASSERT v_status = 'broken', 'Loadout "Broken Skyrim UI" status expected broken, got ' || coalesce(v_status, 'NULL');
-    SELECT status INTO v_status FROM loadout_health_view WHERE loadout_id = '3b88929e-c10b-59de-9758-5f1b7538a451'::uuid;
+    SELECT status INTO v_status FROM loadout_health_view WHERE loadout_id = 'fb0f4366-2e53-53af-9d9c-daff62c554ab'::uuid;
     ASSERT v_status = 'healthy', 'Loadout "Healthy Skyrim Essentials" status expected healthy, got ' || coalesce(v_status, 'NULL');
-    SELECT status INTO v_status FROM loadout_health_view WHERE loadout_id = '6568edd0-7c42-5311-844e-9539ab40cfcb'::uuid;
+    SELECT status INTO v_status FROM loadout_health_view WHERE loadout_id = 'f2ff6cbd-0d94-58cb-8d07-31eb201e6d1a'::uuid;
     ASSERT v_status = 'warnings', 'Loadout "Warnings Commonwealth Setup" status expected warnings, got ' || coalesce(v_status, 'NULL');
-    SELECT status INTO v_status FROM loadout_health_view WHERE loadout_id = '57612c10-979d-556f-9bd6-afb8318855d0'::uuid;
+    SELECT status INTO v_status FROM loadout_health_view WHERE loadout_id = 'c23b20e5-bac4-5232-b63d-2bd26ef28bf7'::uuid;
     ASSERT v_status = 'broken', 'Loadout "Broken Settlement Pack" status expected broken, got ' || coalesce(v_status, 'NULL');
-    SELECT status INTO v_status FROM loadout_health_view WHERE loadout_id = '05c3d3bc-8a82-543b-a665-431be299c56e'::uuid;
+    SELECT status INTO v_status FROM loadout_health_view WHERE loadout_id = 'fe67c6bd-4aad-5906-a3ac-831b785ad8ef'::uuid;
     ASSERT v_status = 'healthy', 'Loadout "Healthy Farm Automation" status expected healthy, got ' || coalesce(v_status, 'NULL');
-    SELECT status INTO v_status FROM loadout_health_view WHERE loadout_id = '765b7740-9f60-539f-864e-58dd0eac34c6'::uuid;
+    SELECT status INTO v_status FROM loadout_health_view WHERE loadout_id = 'ed109867-3c0b-551b-888e-71d73004e917'::uuid;
     ASSERT v_status = 'broken', 'Loadout "Broken Stardew Valley Expanded" status expected broken, got ' || coalesce(v_status, 'NULL');
-    SELECT status INTO v_status FROM loadout_health_view WHERE loadout_id = '89b8cb84-637a-5fda-a983-7e9f85a8af80'::uuid;
-    ASSERT v_status = 'healthy', 'Loadout "Modder1 Private Essentials" status expected healthy, got ' || coalesce(v_status, 'NULL');
+    SELECT status INTO v_status FROM loadout_health_view WHERE loadout_id = '4d16f480-b1f4-5366-9395-179ff3918d13'::uuid;
+    ASSERT v_status = 'healthy', 'Loadout "Curator Private Essentials" status expected healthy, got ' || coalesce(v_status, 'NULL');
 
     RAISE NOTICE 'seed_expectations: all assertions passed successfully.';
 END $$;

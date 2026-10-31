@@ -1,8 +1,2 @@
 - { username: admin, email: admin@modvault.dev, role: admin, password_env: ADMIN_PASSWORD }
 - { username: curator, email: curator@modvault.dev, role: curator, password_env: CURATOR_PASSWORD }
-- { username: modder1, email: modder1@modvault.dev, role: modder, password_env: MODDER_PASSWORD }
-- { username: modder2, email: modder2@modvault.dev, role: modder, password_env: MODDER_PASSWORD }
-- { username: modder3, email: modder3@modvault.dev, role: modder, password_env: MODDER_PASSWORD }
-- { username: modder4, email: modder4@modvault.dev, role: modder, password_env: MODDER_PASSWORD }
-- { username: modder5, email: modder5@modvault.dev, role: modder, password_env: MODDER_PASSWORD }
-- { username: modder6, email: modder6@modvault.dev, role: modder, password_env: MODDER_PASSWORD }

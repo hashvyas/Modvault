@@ -33,7 +33,6 @@ jobs:
       # Throwaway CI database only; real passwords live in each developer's .env.
       ADMIN_PASSWORD: ci-admin-password
       CURATOR_PASSWORD: ci-curator-password
-      MODDER_PASSWORD: ci-modder-password
       TRANSFORMERS_CACHE: ${{ github.workspace }}/.hf-cache
 
     steps:

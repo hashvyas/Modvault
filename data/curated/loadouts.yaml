@@ -1,5 +1,5 @@
 - name: Broken Skyrim UI
-  owner: modder1
+  owner: curator
   game: skyrimspecialedition
   game_version: "1.6.1170"
   description: "Skyrim UI setup with a missing SkyUI dependency and a bad load order, both fixable in the builder"
@@ -14,7 +14,7 @@
   disabled: []
 
 - name: Healthy Skyrim Essentials
-  owner: modder2
+  owner: curator
   game: skyrimspecialedition
   game_version: "1.6.1170"
   description: "Clean, stable foundation for Skyrim SE"
@@ -29,7 +29,7 @@
   disabled: []
 
 - name: Warnings Commonwealth Setup
-  owner: modder3
+  owner: curator
   game: fallout4
   game_version: "1.10.163"
   description: "Fallout 4 setup with partial conflict, load order warning, and missing recommendations"
@@ -44,7 +44,7 @@
   disabled: []
 
 - name: Broken Settlement Pack
-  owner: modder4
+  owner: curator
   game: fallout4
   game_version: "1.10.984"
   description: "Fallout 4 setup on next-gen version with declared conflict and version constraint failure"
@@ -58,7 +58,7 @@
   disabled: []
 
 - name: Healthy Farm Automation
-  owner: modder5
+  owner: curator
   game: stardewvalley
   game_version: "1.6.8"
   description: "Clean automation loadout for Stardew Valley 1.6"
@@ -72,7 +72,7 @@
   disabled: []
 
 - name: Broken Stardew Valley Expanded
-  owner: modder6
+  owner: curator
   game: stardewvalley
   game_version: "1.5.6"
   description: "SVE loaded before SMAPI with missing dependencies and game version mismatch"
@@ -84,11 +84,11 @@
   disabled: []
 
 # ASSUMPTION: same mods as "Healthy Skyrim Essentials" so expected_status healthy holds without new compat data.
-- name: Modder1 Private Essentials
-  owner: modder1
+- name: Curator Private Essentials
+  owner: curator
   game: skyrimspecialedition
   game_version: "1.6.1170"
-  description: "Private copy of the Skyrim essentials, visible only to modder1"
+  description: "Private copy of the Skyrim essentials, visible only to curator"
   is_public: false
   expected_status: healthy
   mods:

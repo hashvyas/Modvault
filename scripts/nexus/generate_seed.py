@@ -119,7 +119,6 @@ def main():
     # SECTION 2: USERS
     lines.append("-- 2. USERS")
     user_id_by_username = {}
-    read_envs = set()
     for u in users_yaml:
         username = u["username"]
         u_id = gen_uuid("user", username)
@@ -130,15 +129,13 @@ def main():
             # Privileged passwords come from the environment so they never live in the repo.
             env_name = u["password_env"]
             var = env_name.lower()
-            if env_name not in read_envs:  # several users can share one variable
-                read_envs.add(env_name)
-                lines += [
-                    f"\\getenv {var} {env_name}",
-                    f"\\if :{{?{var}}}",
-                    "\\else",
-                    f"DO $$ BEGIN RAISE EXCEPTION '{env_name} is not set. Add it to .env or export it before seeding.'; END $$;",
-                    "\\endif",
-                ]
+            lines += [
+                f"\\getenv {var} {env_name}",
+                f"\\if :{{?{var}}}",
+                "\\else",
+                f"DO $$ BEGIN RAISE EXCEPTION '{env_name} is not set. Add it to .env or export it before seeding.'; END $$;",
+                "\\endif",
+            ]
             pw_sql = f":'{var}'"
         else:
             pw_sql = sql_str(u["password"])

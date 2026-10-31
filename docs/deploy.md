@@ -40,10 +40,9 @@ In your local terminal or via Neon SQL Editor with the administrative connection
 
 ```bash
 # 1. Run migrations, types, procedures, triggers, views, and seed data.
-#    seed.sql reads the admin, curator and modder passwords from these variables.
+#    seed.sql reads the admin and curator passwords from these variables.
 export ADMIN_PASSWORD='choose-a-strong-admin-password'
 export CURATOR_PASSWORD='choose-a-strong-curator-password'
-export MODDER_PASSWORD='choose-a-strong-modder-password'
 psql "$NEON_ADMIN_DATABASE_URL" -f database/run_all.sql
 
 # 2. Verify all seed assertions and compatibility rules
@@ -134,7 +133,7 @@ Once deployed, verify the live deployment by performing the demo script steps:
 3. **Load Order & Dependency Auto-Fix**: Add missing dependency (`SkyUI`), click **Auto-sort**. Confirm the score increases and error status resolves.
 4. **Curator Compatibility Heatmap**: Sign in as `curator`, navigate to `/games/skyrimspecialedition/compat`. Mark two mods incompatible. Verify loadout turns `broken`.
 5. **Admin Audit Log**: Sign in as `admin`, navigate to `/admin`. Open the curator's audit entry to review the side-by-side JSON diff.
-6. **Row-Level Security Enforcement**: As `modder2`, verify `modder1`'s private loadout is hidden from list views and returns HTTP 404 on direct URL navigation.
+6. **Row-Level Security Enforcement**: Register a second account and verify a private loadout created by `curator` is hidden from list views and returns HTTP 404 on direct URL navigation.
 
 ---
 
