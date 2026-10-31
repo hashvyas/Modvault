@@ -4,7 +4,7 @@ Usage (from any folder):
     python scripts/db_reset.py               # rebuild
     python scripts/db_reset.py --with-tests  # rebuild, then run database/tests/run_tests.sql
 
-DATABASE_URL, ADMIN_PASSWORD and CURATOR_PASSWORD come from the environment when set (CI),
+DATABASE_URL, ADMIN_PASSWORD, CURATOR_PASSWORD and MODDER_PASSWORD come from the environment when set (CI),
 otherwise from .env in the repo root.
 Standard library only. Drops all data in schema public.
 """
@@ -67,12 +67,13 @@ def main():
     psql = find_tool("psql")
     pg_isready = find_tool("pg_isready")
 
-    # seed.sql reads the admin and curator passwords with \getenv.
+    # seed.sql reads the admin, curator and modder passwords with \getenv.
     env = dict(
         os.environ,
         PGCLIENTENCODING="UTF8",
         ADMIN_PASSWORD=read_setting("ADMIN_PASSWORD"),
         CURATOR_PASSWORD=read_setting("CURATOR_PASSWORD"),
+        MODDER_PASSWORD=read_setting("MODDER_PASSWORD"),
     )
     psql_base = [psql, "-X", "-v", "ON_ERROR_STOP=1", "-d", url]
 

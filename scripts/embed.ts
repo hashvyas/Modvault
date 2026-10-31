@@ -2,7 +2,9 @@ import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import pg from 'pg';
-import { pipeline } from '@huggingface/transformers';
+import { env, pipeline } from '@huggingface/transformers';
+// Same cache dir as web/lib/embed.ts, so CI can cache the model outside node_modules.
+if (process.env.TRANSFORMERS_CACHE) env.cacheDir = process.env.TRANSFORMERS_CACHE;
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

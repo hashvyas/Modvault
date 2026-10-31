@@ -56,9 +56,10 @@ APP_DATABASE_URL=postgresql://modvault_app:modvault_app_dev@localhost:5432/modva
 JWT_SECRET=<at least 32 characters, e.g. from: openssl rand -hex 32>
 ADMIN_PASSWORD=<pick one>
 CURATOR_PASSWORD=<pick one>
+MODDER_PASSWORD=<pick one>
 ```
 
-The seed creates the `admin` and `curator` accounts with the passwords you choose here. Then run these three commands from the repo root:
+The seed creates the `admin` and `curator` accounts, and `modder1` to `modder6` (sharing `MODDER_PASSWORD`), with the passwords you choose here. Then run these three commands from the repo root:
 
 ```bash
 python scripts/db_reset.py                                        # schema, logic, RLS and seed

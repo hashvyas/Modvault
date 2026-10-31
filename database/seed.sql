@@ -24,12 +24,17 @@ INSERT INTO users (user_id, username, email, password_hash, role, is_active) VAL
 DO $$ BEGIN RAISE EXCEPTION 'CURATOR_PASSWORD is not set. Add it to .env or export it before seeding.'; END $$;
 \endif
 INSERT INTO users (user_id, username, email, password_hash, role, is_active) VALUES ('06144ea0-f614-5962-95b1-b59fd16c3961', 'curator', 'curator@modvault.dev', crypt(:'curator_password', gen_salt('bf', 10)), 'curator'::user_role_enum, TRUE) ON CONFLICT (username) DO NOTHING;
-INSERT INTO users (user_id, username, email, password_hash, role, is_active) VALUES ('10a9b262-706c-5480-a89f-2f6813238cf9', 'modder1', 'modder1@modvault.dev', crypt('REDACTED', gen_salt('bf', 10)), 'modder'::user_role_enum, TRUE) ON CONFLICT (username) DO NOTHING;
-INSERT INTO users (user_id, username, email, password_hash, role, is_active) VALUES ('c886cd96-d931-564f-9870-54207c78ca27', 'modder2', 'modder2@modvault.dev', crypt('REDACTED', gen_salt('bf', 10)), 'modder'::user_role_enum, TRUE) ON CONFLICT (username) DO NOTHING;
-INSERT INTO users (user_id, username, email, password_hash, role, is_active) VALUES ('7b31433f-92d7-54e0-ade2-964aff22e069', 'modder3', 'modder3@modvault.dev', crypt('REDACTED', gen_salt('bf', 10)), 'modder'::user_role_enum, TRUE) ON CONFLICT (username) DO NOTHING;
-INSERT INTO users (user_id, username, email, password_hash, role, is_active) VALUES ('a6909225-202f-5a94-90b2-11b87afcf456', 'modder4', 'modder4@modvault.dev', crypt('REDACTED', gen_salt('bf', 10)), 'modder'::user_role_enum, TRUE) ON CONFLICT (username) DO NOTHING;
-INSERT INTO users (user_id, username, email, password_hash, role, is_active) VALUES ('9d5bb829-ce97-51b6-91ba-2c627b8e5b65', 'modder5', 'modder5@modvault.dev', crypt('REDACTED', gen_salt('bf', 10)), 'modder'::user_role_enum, TRUE) ON CONFLICT (username) DO NOTHING;
-INSERT INTO users (user_id, username, email, password_hash, role, is_active) VALUES ('95be0339-933f-5fce-8509-d9b010403b26', 'modder6', 'modder6@modvault.dev', crypt('REDACTED', gen_salt('bf', 10)), 'modder'::user_role_enum, TRUE) ON CONFLICT (username) DO NOTHING;
+\getenv modder_password MODDER_PASSWORD
+\if :{?modder_password}
+\else
+DO $$ BEGIN RAISE EXCEPTION 'MODDER_PASSWORD is not set. Add it to .env or export it before seeding.'; END $$;
+\endif
+INSERT INTO users (user_id, username, email, password_hash, role, is_active) VALUES ('10a9b262-706c-5480-a89f-2f6813238cf9', 'modder1', 'modder1@modvault.dev', crypt(:'modder_password', gen_salt('bf', 10)), 'modder'::user_role_enum, TRUE) ON CONFLICT (username) DO NOTHING;
+INSERT INTO users (user_id, username, email, password_hash, role, is_active) VALUES ('c886cd96-d931-564f-9870-54207c78ca27', 'modder2', 'modder2@modvault.dev', crypt(:'modder_password', gen_salt('bf', 10)), 'modder'::user_role_enum, TRUE) ON CONFLICT (username) DO NOTHING;
+INSERT INTO users (user_id, username, email, password_hash, role, is_active) VALUES ('7b31433f-92d7-54e0-ade2-964aff22e069', 'modder3', 'modder3@modvault.dev', crypt(:'modder_password', gen_salt('bf', 10)), 'modder'::user_role_enum, TRUE) ON CONFLICT (username) DO NOTHING;
+INSERT INTO users (user_id, username, email, password_hash, role, is_active) VALUES ('a6909225-202f-5a94-90b2-11b87afcf456', 'modder4', 'modder4@modvault.dev', crypt(:'modder_password', gen_salt('bf', 10)), 'modder'::user_role_enum, TRUE) ON CONFLICT (username) DO NOTHING;
+INSERT INTO users (user_id, username, email, password_hash, role, is_active) VALUES ('9d5bb829-ce97-51b6-91ba-2c627b8e5b65', 'modder5', 'modder5@modvault.dev', crypt(:'modder_password', gen_salt('bf', 10)), 'modder'::user_role_enum, TRUE) ON CONFLICT (username) DO NOTHING;
+INSERT INTO users (user_id, username, email, password_hash, role, is_active) VALUES ('95be0339-933f-5fce-8509-d9b010403b26', 'modder6', 'modder6@modvault.dev', crypt(:'modder_password', gen_salt('bf', 10)), 'modder'::user_role_enum, TRUE) ON CONFLICT (username) DO NOTHING;
 
 -- 3. TAGS
 INSERT INTO tags (tag_id, name, slug) VALUES ('4cfedebd-535a-5413-920e-26a40398712a', 'User Interface', 'user-interface') ON CONFLICT (slug) DO NOTHING;

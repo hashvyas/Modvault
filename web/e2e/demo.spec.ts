@@ -20,6 +20,7 @@ const OWNER_URL =
 // Set in .env (or the CI env) and seeded by db_reset.py; never committed.
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD ?? '';
 const CURATOR_PASSWORD = process.env.CURATOR_PASSWORD ?? '';
+const MODDER_PASSWORD = process.env.MODDER_PASSWORD ?? '';
 
 const BROKEN_SKYRIM_UI = '74867771-c761-5ed8-9468-8358f8cad4f8';
 const PRIVATE_LOADOUT_NAME = 'Modder1 Private Vault';
@@ -151,7 +152,7 @@ test.describe.serial('ModVault Demo Script (E2E Steps 1 to 6)', () => {
 
   test('Step 2: Open Broken Skyrim Loadout and Verify Diagnostics', async ({ page }) => {
     // 1. Log in as modder1
-    await loginAs(page, 'modder1', 'REDACTED');
+    await loginAs(page, 'modder1', MODDER_PASSWORD);
 
     // 2. Navigate to loadouts manager
     await page.goto('/loadouts');
@@ -184,7 +185,7 @@ test.describe.serial('ModVault Demo Script (E2E Steps 1 to 6)', () => {
 
   test('Step 3: Add Missing Dependency and Auto-sort Load Order', async ({ page }) => {
     // Log in as modder1 if session is not preserved
-    await loginAs(page, 'modder1', 'REDACTED');
+    await loginAs(page, 'modder1', MODDER_PASSWORD);
 
     // Open Broken Skyrim UI
     await page.goto('/loadouts/74867771-c761-5ed8-9468-8358f8cad4f8');
@@ -293,7 +294,7 @@ test.describe.serial('ModVault Demo Script (E2E Steps 1 to 6)', () => {
 
   test('Step 6: Modder2 Cannot View Modder1 Private Loadout (RLS Enforcement)', async ({ page }) => {
     // 1. Log in as modder1 to create a private loadout
-    await loginAs(page, 'modder1', 'REDACTED');
+    await loginAs(page, 'modder1', MODDER_PASSWORD);
 
     // Navigate to /loadouts and create private loadout
     await page.goto('/loadouts');
@@ -321,7 +322,7 @@ test.describe.serial('ModVault Demo Script (E2E Steps 1 to 6)', () => {
     await expect(page.locator('h1')).toContainText('Modder1 Private Vault');
 
     // 2. Log in as modder2
-    await loginAs(page, 'modder2', 'REDACTED');
+    await loginAs(page, 'modder2', MODDER_PASSWORD);
 
     // 3. Confirm private loadout is NOT visible in loadouts dashboard
     await page.goto('/loadouts');
@@ -350,7 +351,7 @@ test.describe.serial('ModVault Demo Script (E2E Steps 1 to 6)', () => {
     await page.screenshot({ path: path.join(screenshotsDir, 'mod-detail.png') });
 
     // 4. Mod publish page (as modder1)
-    await loginAs(page, 'modder1', 'REDACTED');
+    await loginAs(page, 'modder1', MODDER_PASSWORD);
     await page.goto('/mods/new');
     await page.screenshot({ path: path.join(screenshotsDir, 'mod-publish.png') });
 

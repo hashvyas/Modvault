@@ -34,6 +34,7 @@ jobs:
       # Throwaway CI database only; real passwords live in each developer's .env.
       ADMIN_PASSWORD: ci-admin-password
       CURATOR_PASSWORD: ci-curator-password
+      MODDER_PASSWORD: ci-modder-password
 
     steps:
       - uses: actions/checkout@v4

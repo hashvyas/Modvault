@@ -40,9 +40,10 @@ In your local terminal or via Neon SQL Editor with the administrative connection
 
 ```bash
 # 1. Run migrations, types, procedures, triggers, views, and seed data.
-#    seed.sql reads the admin and curator passwords from these variables.
+#    seed.sql reads the admin, curator and modder passwords from these variables.
 export ADMIN_PASSWORD='choose-a-strong-admin-password'
 export CURATOR_PASSWORD='choose-a-strong-curator-password'
+export MODDER_PASSWORD='choose-a-strong-modder-password'
 psql "$NEON_ADMIN_DATABASE_URL" -f database/run_all.sql
 
 # 2. Verify all seed assertions and compatibility rules
