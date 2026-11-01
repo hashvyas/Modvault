@@ -101,11 +101,11 @@ To refresh the seed data from Nexus Mods, set `NEXUS_API_KEY` in `.env`, install
 
 ## Benchmarks
 
-From [`docs/benchmarks.md`](docs/benchmarks.md): 50,000 synthetic mods, `EXPLAIN (ANALYZE, BUFFERS)`, median of 3 runs.
+Measured with `database/tests/bench.sql` on 2026-11-01 (method in [`docs/benchmarks.md`](docs/benchmarks.md)): 50,000 synthetic mods, `EXPLAIN (ANALYZE, BUFFERS)`, median of 3 runs.
 
 | Query | With index (ms) | Without index (ms) | Speed-up | Plan node with index | Plan node without index |
 |---|---|---|---|---|---|
-| Vector top 10 (`ORDER BY embedding <=> q LIMIT 10`) | 1.00 (0.95 to 1.16) | 53.29 (29.43 to 73.19) | 53x | Index Scan using `idx_mods_embedding_hnsw` (HNSW) | Seq Scan on mods + top-N heapsort |
-| Full-text search (`search_tsv @@ 'weather lantern'`, top 10 by `ts_rank_cd`) | 1.54 (1.53 to 1.63) | 52.13 (29.14 to 64.56) | 34x | Bitmap Index Scan on `idx_mods_search_tsv` (GIN) | Seq Scan on mods |
-| Reverse dependency lookup (mods that require one mod) | 0.15 (0.13 to 0.41) | 5.69 (4.97 to 6.15) | 37x | Bitmap Index Scan on `idx_mod_dependencies_required_mod` (B-tree) | Seq Scan on mod_dependencies |
-| Health check, 40-mod loadout (`fn_check_loadout_compatibility`) | 4.17 (3.93 to 4.24) | 14.40 (13.37 to 15.80) | 3.5x | Index Scan using `idx_mod_dependencies_dependent_version` (B-tree, 40 loops) | Seq Scan on mod_dependencies (101,482 rows) |
+| Vector top 10 (`ORDER BY embedding <=> q LIMIT 10`) | 0.88 (0.82 to 0.99) | 52.07 (27.03 to 68.40) | 59x | Index Scan using `idx_mods_embedding_hnsw` (HNSW) | Seq Scan on mods + top-N heapsort |
+| Full-text search (`search_tsv @@ 'weather lantern'`, top 10 by `ts_rank_cd`) | 1.58 (1.44 to 1.65) | 51.14 (22.49 to 72.49) | 32x | Bitmap Index Scan on `idx_mods_search_tsv` (GIN) | Seq Scan on mods |
+| Reverse dependency lookup (mods that require one mod) | 0.17 (0.15 to 0.28) | 5.80 (5.31 to 6.80) | 34x | Bitmap Index Scan on `idx_mod_dependencies_required_mod` (B-tree) | Seq Scan on mod_dependencies |
+| Health check, 40-mod loadout (`fn_check_loadout_compatibility`) | 4.15 (3.91 to 4.39) | 14.96 (14.53 to 16.46) | 3.6x | Index Scan using `idx_mod_dependencies_dependent_version` (B-tree, 40 loops) | Seq Scan on mod_dependencies (101,484 rows) |
