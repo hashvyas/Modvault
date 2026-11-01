@@ -1,5 +1,8 @@
 # ModVault
 
+[![db](https://github.com/hashvyas/Modvault/actions/workflows/db.yml/badge.svg)](https://github.com/hashvyas/Modvault/actions/workflows/db.yml)
+[![Web Application CI](https://github.com/hashvyas/Modvault/actions/workflows/app.yml/badge.svg)](https://github.com/hashvyas/Modvault/actions/workflows/app.yml)
+
 ModVault checks a game mod loadout before you launch the game. Pick a game, build an ordered list of mod versions, and ModVault reports which mods miss a dependency, which pairs conflict, which load in the wrong order and which do not support your game version. Find mods with hybrid search that understands meaning ("make the menus look better"), not only keywords.
 
 Seeded with 45 real mods (15 each for Skyrim Special Edition, Fallout 4 and Stardew Valley) from the Nexus Mods API. Built for the PES University DBMS mini project.
@@ -39,7 +42,7 @@ Browser ──► Next.js (App Router, server components and server actions)
 
 ## Run it on your machine
 
-Prerequisites: PostgreSQL 18 with pgvector 0.8+, Python 3.11+, Node.js 24. Create the owner role and database once (section 3 of the plan):
+Prerequisites: PostgreSQL 18 with pgvector 0.8+, Python 3.11+, Node.js 24. Create the owner role and database once:
 
 ```bash
 psql -U postgres -c "CREATE ROLE modvault_owner LOGIN SUPERUSER PASSWORD 'modvault_owner_dev';"
@@ -52,6 +55,8 @@ Create a `.env` file in the repo root:
 DATABASE_URL=postgresql://modvault_owner:modvault_owner_dev@localhost:5432/modvault
 APP_DATABASE_URL=postgresql://modvault_app:modvault_app_dev@localhost:5432/modvault
 JWT_SECRET=<at least 32 characters, e.g. from: openssl rand -hex 32>
+ADMIN_PASSWORD=<password for the seeded admin account>
+CURATOR_PASSWORD=<password for the seeded curator account>
 ```
 
 The seed creates the `admin` and `curator` accounts with the passwords you choose here. Then run these three commands from the repo root:
@@ -63,6 +68,25 @@ npm --prefix web ci && npm --prefix web run build && npm --prefix web run start
 ```
 
 Open http://localhost:3000 and register an account. Add `--with-tests` to `db_reset.py` to run the SQL tests too, then run `python scripts/db_reset.py` again for clean seed data.
+
+To deploy to Neon and Render, see [`docs/deploy.md`](docs/deploy.md).
+
+## Development
+
+Run these from `web/`:
+
+| Command | What it does |
+|---|---|
+| `npm run dev` | Dev server with Turbopack on http://localhost:3000 |
+| `npm run lint` | ESLint |
+| `npm run typecheck` | `tsc --noEmit` |
+| `npm run build && npm run start` | Production build and server |
+| `npm run test:e2e` | Playwright end-to-end tests (starts `npm run start` itself, so build first) |
+| `npm run cache-model` | Pre-download the embedding model |
+
+The SQL tests live in `database/tests/` and run through `python scripts/db_reset.py --with-tests`. CI (`.github/workflows/`) runs both suites on PostgreSQL 18 with pgvector.
+
+To refresh the seed data from Nexus Mods, set `NEXUS_API_KEY` in `.env`, install `scripts/nexus/requirements.txt` and run `python scripts/nexus/pull.py`, then `python scripts/nexus/generate_seed.py`. The hand-curated inputs are in `data/curated/`.
 
 ## Screenshots
 
