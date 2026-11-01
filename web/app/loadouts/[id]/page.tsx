@@ -205,16 +205,17 @@ export default async function LoadoutBuilderPage({ params, searchParams }: Props
       {/* Header Banner */}
       <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4 border-b border-border pb-6">
         <div className="space-y-1">
+          <Link
+            href={`/games/${loadout.game_domain}`}
+            className="text-[11px] font-semibold uppercase tracking-widest text-cyan-400/80 hover:text-cyan-300 transition-colors"
+          >
+            {loadout.game_name}
+          </Link>
           <div className="flex items-center gap-3">
             <h1 className="text-3xl font-extrabold tracking-tight">{loadout.name}</h1>
-            <Badge variant="outline" className="text-xs">
-              {loadout.game_name}
+            <Badge variant="secondary" className="text-[10px]">
+              {loadout.is_public ? 'Public' : 'Private'}
             </Badge>
-            {loadout.is_public && (
-              <Badge variant="secondary" className="text-[10px]">
-                Public
-              </Badge>
-            )}
           </div>
           <p className="text-muted-foreground text-xs">
             Owner: <strong className="text-foreground">{loadout.owner_username}</strong>

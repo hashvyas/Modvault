@@ -178,6 +178,12 @@ function SortableModRow({
 
 export function LoadoutModList({ loadoutId, initialMods, isOwner }: Props) {
   const [mods, setMods] = useState<LoadoutModItem[]>(initialMods);
+  // Resync when the server re-renders with fresh data (auto-sort, add mod, etc.)
+  const [prevInitialMods, setPrevInitialMods] = useState(initialMods);
+  if (initialMods !== prevInitialMods) {
+    setPrevInitialMods(initialMods);
+    setMods(initialMods);
+  }
   const [isPending, startTransition] = useTransition();
 
   const sensors = useSensors(
