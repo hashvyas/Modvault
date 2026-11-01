@@ -65,6 +65,8 @@ export async function createLoadoutAction(
   }
 
   if (newLoadoutId) {
+    revalidatePath('/loadouts');
+    revalidatePath('/', 'layout');
     redirect(`/loadouts/${newLoadoutId}`);
   }
 
@@ -108,13 +110,20 @@ function assertChanged(rowCount: number | null) {
  * Delete a loadout
  */
 export async function deleteLoadoutAction(
-  prevState: ActionState,
-  formData: FormData
+  loadoutIdOrPrevState: string | ActionState,
+  maybeFormData?: FormData
 ): Promise<ActionState> {
   const session = await getSession();
   if (!session) return { error: 'Unauthorized' };
 
-  const parsed = deleteLoadoutSchema.safeParse({ loadout_id: formData.get('loadout_id') });
+  let rawId: unknown;
+  if (typeof loadoutIdOrPrevState === 'string') {
+    rawId = loadoutIdOrPrevState;
+  } else if (maybeFormData instanceof FormData) {
+    rawId = maybeFormData.get('loadout_id');
+  }
+
+  const parsed = deleteLoadoutSchema.safeParse({ loadout_id: rawId });
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Invalid input' };
   const { loadout_id } = parsed.data;
 
@@ -124,6 +133,7 @@ export async function deleteLoadoutAction(
       assertChanged(res.rowCount);
     });
     revalidatePath('/loadouts');
+    revalidatePath('/', 'layout');
     return { success: true };
   } catch (err) {
     return { error: formatErrorMessage(err) };
@@ -378,12 +388,13 @@ export async function importLoadoutAction(
   }
 
   if (importedLoadoutId) {
+    revalidatePath('/loadouts');
+    revalidatePath('/', 'layout');
     redirect(`/loadouts/${importedLoadoutId}?imported=true&skipped=${skippedCount}`);
   }
 
   return { error: 'Failed to retrieve imported loadout.' };
 }
-
 
 const directImportSchema = z.object({
   sourceLoadoutId: uuid,
@@ -457,6 +468,7 @@ export async function directImportLoadoutAction(
 
   if (newLoadoutId) {
     revalidatePath('/loadouts');
+    revalidatePath('/', 'layout');
     redirect(`/loadouts/${newLoadoutId}?imported=true`);
   }
 

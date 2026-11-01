@@ -8,6 +8,7 @@ import { CreateLoadoutForm } from '@/components/create-loadout-form';
 import { ScoreMeter } from '@/components/score-meter';
 import { LoadoutImportForm } from '@/components/loadout-export-import';
 import { DirectImportButton } from '@/components/direct-import-button';
+import { DeleteLoadoutButton } from '@/components/delete-loadout-button';
 
 export const dynamic = 'force-dynamic';
 
@@ -139,48 +140,74 @@ export default async function LoadoutsDashboardPage() {
                 else if (l.status === 'warnings') badgeVariant = 'warning';
 
                 return (
-                  <Link key={l.loadout_id} href={`/loadouts/${l.loadout_id}`} className="group block">
-                    <Card className="h-full flex flex-col justify-between bg-card/40 hover:bg-card/70 border-border transition-all hover:border-cyan-500/40">
-                      <CardHeader className="pb-3">
-                        <div className="flex items-start justify-between gap-2">
+                  <Card
+                    key={l.loadout_id}
+                    className="h-full flex flex-col justify-between bg-card/40 hover:bg-card/70 border-border transition-all hover:border-cyan-500/40 group"
+                  >
+                    <CardHeader className="pb-3">
+                      <div className="flex items-start justify-between gap-2">
+                        <Link href={`/loadouts/${l.loadout_id}`} className="flex-1 min-w-0">
                           <CardTitle className="text-base group-hover:text-cyan-300 transition-colors line-clamp-1">
                             {l.name}
                           </CardTitle>
+                        </Link>
+                        <div className="flex items-center gap-1.5 shrink-0">
                           <Badge variant={badgeVariant} className="text-[10px] uppercase font-bold shrink-0">
                             {l.status}
                           </Badge>
+                          <DeleteLoadoutButton
+                            loadoutId={l.loadout_id}
+                            loadoutName={l.name}
+                            size="icon-xs"
+                            variant="ghost"
+                            className="text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                          />
                         </div>
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                          <span>{l.game_name}</span>
-                          {l.game_version && (
-                            <>
-                              <span>&bull;</span>
-                              <span className="font-mono">v{l.game_version}</span>
-                            </>
-                          )}
-                        </div>
-                      </CardHeader>
-                      <CardContent className="space-y-4 flex-1 flex flex-col justify-between">
-                        {l.description ? (
-                          <p className="text-xs text-muted-foreground line-clamp-2">
-                            {l.description}
-                          </p>
-                        ) : (
-                          <div />
+                      </div>
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <span>{l.game_name}</span>
+                        {l.game_version && (
+                          <>
+                            <span>&bull;</span>
+                            <span className="font-mono">v{l.game_version}</span>
+                          </>
                         )}
+                      </div>
+                    </CardHeader>
+                    <CardContent className="space-y-4 flex-1 flex flex-col justify-between">
+                      {l.description ? (
+                        <p className="text-xs text-muted-foreground line-clamp-2">
+                          {l.description}
+                        </p>
+                      ) : (
+                        <div />
+                      )}
 
-                        <div className="flex items-center justify-between pt-3 border-t border-border/50 text-xs">
-                          <div className="flex items-center gap-2">
-                            <ScoreMeter score={l.score} status={l.status} size={36} />
-                            <span className="text-muted-foreground">{l.mod_count} mods</span>
-                          </div>
-                          <span className="text-cyan-400 font-semibold group-hover:translate-x-1 transition-transform inline-flex items-center text-xs">
-                            Manage &rarr;
-                          </span>
+                      <div className="flex items-center justify-between pt-3 border-t border-border/50 text-xs">
+                        <div className="flex items-center gap-2">
+                          <ScoreMeter score={l.score} status={l.status} size={36} />
+                          <span className="text-muted-foreground">{l.mod_count} mods</span>
                         </div>
-                      </CardContent>
-                    </Card>
-                  </Link>
+                        <div className="flex items-center gap-2">
+                          <DeleteLoadoutButton
+                            loadoutId={l.loadout_id}
+                            loadoutName={l.name}
+                            label="Remove"
+                            showIcon={false}
+                            size="xs"
+                            variant="ghost"
+                            className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 text-xs h-6 px-1.5"
+                          />
+                          <Link
+                            href={`/loadouts/${l.loadout_id}`}
+                            className="text-cyan-400 font-semibold group-hover:translate-x-1 transition-transform inline-flex items-center text-xs"
+                          >
+                            Manage &rarr;
+                          </Link>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
                 );
               })}
             </div>

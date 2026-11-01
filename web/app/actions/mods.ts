@@ -68,6 +68,7 @@ export async function promoteVersionAction(
     });
 
     revalidatePath(`/mods/${mod_id}`);
+    revalidatePath('/', 'layout');
     return { success: true };
   } catch (err) {
     return { error: formatErrorMessage(err) };
@@ -150,6 +151,9 @@ export async function addToLoadoutAction(
     });
 
     revalidatePath(`/mods/${mod_id}`);
+    revalidatePath(`/loadouts/${loadout_id}`);
+    revalidatePath('/loadouts');
+    revalidatePath('/', 'layout');
     return { success: true };
   } catch (err) {
     return { error: formatErrorMessage(err) };
@@ -214,10 +218,10 @@ export async function publishModAction(
   }
 
   if (newModId) {
+    revalidatePath('/loadouts');
+    revalidatePath('/', 'layout');
     redirect(`/mods/${newModId}`);
   }
 
   return { error: 'Mod was created but ID could not be retrieved.' };
 }
-
-

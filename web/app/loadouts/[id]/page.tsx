@@ -5,6 +5,7 @@ import { withUser } from '@/lib/db';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { DirectImportButton } from '@/components/direct-import-button';
+import { DeleteLoadoutButton } from '@/components/delete-loadout-button';
 import {
   LoadoutModList,
   type LoadoutModItem,
@@ -230,6 +231,17 @@ export default async function LoadoutBuilderPage({ params, searchParams }: Props
               loadoutId={loadout.loadout_id}
               size="sm"
               className="bg-cyan-600 hover:bg-cyan-500 text-white font-medium text-xs"
+            />
+          )}
+          {isOwner && (
+            <DeleteLoadoutButton
+              loadoutId={loadout.loadout_id}
+              loadoutName={loadout.name}
+              redirectTo="/loadouts"
+              size="sm"
+              variant="destructive"
+              label="Remove Loadout"
+              className="text-xs"
             />
           )}
           <Link href={`/games/${loadout.game_domain}`}>

@@ -2,6 +2,7 @@
 
 import React, { useActionState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
   promoteVersionAction,
   addToLoadoutAction,
@@ -131,6 +132,7 @@ export function AddToLoadoutPicker({
   loadouts: LoadoutOption[];
   isLoggedIn: boolean;
 }) {
+  const router = useRouter();
   const [state, formAction, isPending] = useActionState<ActionState, FormData>(
     addToLoadoutAction,
     {}
@@ -138,6 +140,34 @@ export function AddToLoadoutPicker({
   const primaryVer = versions.find((v) => v.is_primary) ?? versions[0];
   const [selectedId, setSelectedId] = React.useState(loadouts[0]?.loadout_id);
   const [selectedVersionId, setSelectedVersionId] = React.useState(primaryVer?.version_id);
+
+  // Sync selected loadout when loadouts prop changes or if selection is missing
+  React.useEffect(() => {
+    if (!selectedId || !loadouts.some((l) => l.loadout_id === selectedId)) {
+      if (loadouts.length > 0) {
+        setSelectedId(loadouts[0].loadout_id);
+      }
+    }
+  }, [loadouts, selectedId]);
+
+  // Sync selected version when versions prop changes
+  React.useEffect(() => {
+    if (!selectedVersionId || !versions.some((v) => v.version_id === selectedVersionId)) {
+      if (primaryVer) {
+        setSelectedVersionId(primaryVer.version_id);
+      }
+    }
+  }, [versions, primaryVer, selectedVersionId]);
+
+  // Automatically refresh server component data when tab/window regains focus
+  React.useEffect(() => {
+    const handleFocus = () => {
+      router.refresh();
+    };
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, [router]);
+
   const currentVersionId = loadouts.find((l) => l.loadout_id === selectedId)?.current_version_id ?? null;
   const alreadyAdded = currentVersionId === selectedVersionId;
   const selectedSemver = versions.find((v) => v.version_id === selectedVersionId)?.semver;
@@ -162,9 +192,20 @@ export function AddToLoadoutPicker({
     return (
       <div className="p-4 rounded-xl border border-dashed border-border bg-card/20 flex items-center justify-between">
         <span className="text-sm text-muted-foreground">You have no loadouts for this game yet.</span>
-        <Link href="/loadouts">
-          <Button size="sm">Create Loadout</Button>
-        </Link>
+        <div className="flex items-center gap-2">
+          <Button
+            size="sm"
+            variant="ghost"
+            type="button"
+            onClick={() => router.refresh()}
+            className="text-xs"
+          >
+            Refresh
+          </Button>
+          <Link href="/loadouts">
+            <Button size="sm">Create Loadout</Button>
+          </Link>
+        </div>
       </div>
     );
   }
@@ -172,7 +213,19 @@ export function AddToLoadoutPicker({
   return (
     <div className="p-4 rounded-xl border border-border bg-card/40 space-y-3">
       <div className="flex items-center justify-between">
-        <h4 className="text-sm font-semibold">Add to Loadout</h4>
+        <div className="flex items-center gap-2">
+          <h4 className="text-sm font-semibold">Add to Loadout</h4>
+          <Button
+            type="button"
+            variant="ghost"
+            size="xs"
+            onClick={() => router.refresh()}
+            className="text-[11px] text-muted-foreground hover:text-foreground h-5 px-1.5"
+            title="Refresh loadouts list"
+          >
+            Refresh
+          </Button>
+        </div>
         {state.success && (
           <span className="text-xs text-emerald-400 font-medium">Loadout updated!</span>
         )}
