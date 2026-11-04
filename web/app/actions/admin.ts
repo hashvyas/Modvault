@@ -17,9 +17,6 @@ const setUserRoleSchema = z.object({
   role: z.enum(['modder', 'curator', 'admin']),
 });
 
-/**
- * Change a user's role (Admin only)
- */
 export async function setUserRoleAction(
   prevState: ActionState,
   formData: FormData
@@ -55,9 +52,6 @@ export async function setUserRoleAction(
   }
 }
 
-/**
- * Refresh materialized view mv_game_leaderboard concurrently (Admin only)
- */
 export async function refreshReportsAction(): Promise<ActionState> {
   const session = await getSession();
   if (!session || session.role !== 'admin') {

@@ -48,8 +48,6 @@ export function CompatibilityHeatmap({
     upsertCompatibilityAction,
     {}
   );
-
-  // Index cell lookup by canonical key
   const cellMap = new Map<string, HeatmapCellData>();
   cells.forEach((c) => {
     const key =
@@ -70,16 +68,13 @@ export function CompatibilityHeatmap({
     if (!canEdit) return;
     setSelectedPair({ verA: vA, verB: vB });
   };
-
-  // Read the cell from live props, not a click-time snapshot: React resets the form
-  // after each save, and a stale snapshot would reset reason/files to empty.
   const existing = selectedPair
     ? getCell(selectedPair.verA.version_id, selectedPair.verB.version_id)
     : null;
 
   return (
     <div className="space-y-6">
-      {/* Legend & Instructions */}
+      {}
       <div className="flex flex-wrap items-center justify-between gap-4 p-4 rounded-xl border border-border bg-card/40">
         <div className="flex flex-wrap items-center gap-3 text-xs">
           <span className="font-semibold text-foreground">{gameName} Matrix:</span>
@@ -109,7 +104,7 @@ export function CompatibilityHeatmap({
         </div>
       </div>
 
-      {/* Matrix Grid */}
+      {}
       <div className="rounded-xl border border-border overflow-x-auto bg-card/20 p-4">
         <table className="border-collapse text-xs select-none mx-auto">
           <thead>
@@ -199,7 +194,7 @@ export function CompatibilityHeatmap({
         </table>
       </div>
 
-      {/* Curator Modal Dialog for editing compatibility */}
+      {}
       {selectedPair && (
         <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-card border border-border rounded-2xl p-6 max-w-lg w-full space-y-5 shadow-2xl">

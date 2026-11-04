@@ -21,7 +21,6 @@ CURATED_DIR = REPO_ROOT / "data" / "curated"
 RAW_DIR = REPO_ROOT / "data" / "raw"
 BASE_URL = "https://api.nexusmods.com"
 
-
 def load_env():
     """Load NEXUS_API_KEY from os.environ or .env file."""
     api_key = os.environ.get("NEXUS_API_KEY", "").strip()
@@ -37,7 +36,6 @@ def load_env():
                     return val
     return ""
 
-
 def make_request(session, url, headers, max_retries=3):
     """Perform a GET request with retry on 429/5xx and hourly limit checks."""
     if not headers.get("apikey"):
@@ -46,7 +44,7 @@ def make_request(session, url, headers, max_retries=3):
     for attempt in range(1, max_retries + 1):
         try:
             resp = session.get(url, headers=headers, timeout=30)
-            # Check rate limit
+
             hourly_remaining = resp.headers.get("X-RL-Hourly-Remaining")
             if hourly_remaining is not None:
                 try:
@@ -66,7 +64,7 @@ def make_request(session, url, headers, max_retries=3):
                 continue
 
             resp.raise_for_status()
-            time.sleep(1.0)  # Politeness interval between API calls
+            time.sleep(1.0)
             return resp.json()
         except requests.RequestException as e:
             if attempt == max_retries:
@@ -76,7 +74,6 @@ def make_request(session, url, headers, max_retries=3):
             time.sleep(sleep_time)
 
     raise RuntimeError(f"Failed to fetch {url} after {max_retries} attempts.")
-
 
 def main():
     parser = argparse.ArgumentParser(description="Pull mod data from Nexus Mods API")
@@ -92,7 +89,6 @@ def main():
         "Accept": "application/json",
     }
 
-    # Load games.yaml
     games_file = CURATED_DIR / "games.yaml"
     if not games_file.is_file():
         print(f"ERROR: {games_file} does not exist.", file=sys.stderr)
@@ -103,7 +99,6 @@ def main():
 
     target_domains = set(args.games) if args.games else {g["domain"] for g in all_games}
 
-    # Load mods.yaml
     mods_file = CURATED_DIR / "mods.yaml"
     if not mods_file.is_file():
         print(f"ERROR: {mods_file} does not exist.", file=sys.stderr)
@@ -123,7 +118,6 @@ def main():
         game_dir = RAW_DIR / domain
         game_dir.mkdir(parents=True, exist_ok=True)
 
-        # 1. Game metadata
         game_json_file = game_dir / "game.json"
         if args.refresh or not game_json_file.is_file():
             print(f"Fetching game metadata for {domain}...")
@@ -136,7 +130,6 @@ def main():
             print(f"Using cached {game_json_file}")
         total_cached += 1
 
-        # 2. Mods for this game
         game_mods = [m for m in all_mods if m["ref"].startswith(f"{domain}:")]
         print(f"Processing {len(game_mods)} mods for {domain}...")
 
@@ -144,7 +137,6 @@ def main():
             _, mod_id = m["ref"].split(":", 1)
             expect_name = m.get("expect_name", "")
 
-            # Mod info
             mod_file = game_dir / f"mod_{mod_id}.json"
             if args.refresh or not mod_file.is_file():
                 print(f"  Fetching mod {mod_id}...")
@@ -157,7 +149,6 @@ def main():
                     mod_data = json.load(f)
             total_cached += 1
 
-            # Validate expect_name
             actual_name = mod_data.get("name", "")
             if expect_name and expect_name.lower() not in actual_name.lower():
                 print(
@@ -167,7 +158,6 @@ def main():
                 )
                 sys.exit(1)
 
-            # Files list
             files_file = game_dir / f"files_{mod_id}.json"
             if args.refresh or not files_file.is_file():
                 print(f"  Fetching files for mod {mod_id}...")
@@ -178,7 +168,6 @@ def main():
             total_cached += 1
 
     print(f"\nPull completed successfully. {total_cached} files verified.")
-
 
 if __name__ == "__main__":
     main()

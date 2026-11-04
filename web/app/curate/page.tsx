@@ -37,7 +37,6 @@ export default async function CurateDashboardPage() {
 
   try {
     const data = await withUser(session, async (client) => {
-      // 1. Fetch game summaries
       const gRes = await client.query<GameCompatSummary>(`
         SELECT g.game_id, g.name, g.domain,
                (SELECT count(*)::int FROM mods m WHERE m.game_id = g.game_id) AS total_mods,
@@ -52,8 +51,6 @@ export default async function CurateDashboardPage() {
         FROM games g
         ORDER BY g.name ASC
       `);
-
-      // 2. Fetch top conflicting mods from mod_conflict_summary_view
       const confRes = await client.query<ConflictSummaryItem>(`
         SELECT mod_id, mod_name, incompatible_pairs, partial_pairs, declared_conflicts, dependent_mods
         FROM mod_conflict_summary_view
@@ -87,7 +84,7 @@ export default async function CurateDashboardPage() {
         </div>
       </div>
 
-      {/* Game Heatmaps Quick Access */}
+      {}
       <section className="space-y-4">
         <div>
           <h2 className="text-xl font-bold tracking-tight">Compatibility Heatmaps by Game</h2>
@@ -129,7 +126,7 @@ export default async function CurateDashboardPage() {
         </div>
       </section>
 
-      {/* Top Conflicting Mods from mod_conflict_summary_view */}
+      {}
       <section className="space-y-4">
         <div>
           <h2 className="text-xl font-bold tracking-tight">Conflict Intelligence Summary</h2>

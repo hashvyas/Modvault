@@ -22,9 +22,6 @@ const createLoadoutSchema = z.object({
   is_public: z.preprocess((val) => val === 'true' || val === 'on' || val === true, z.boolean()),
 });
 
-/**
- * Create a new loadout
- */
 export async function createLoadoutAction(
   prevState: ActionState,
   formData: FormData
@@ -97,18 +94,12 @@ const removeModSchema = z.object({ loadoutId: uuid, versionId: uuid });
 const autoSortSchema = z.object({ loadoutId: uuid });
 
 const addDependencySchema = z.object({ loadoutId: uuid, relatedModId: uuid });
-
-// RLS hides rows the caller does not own, so a blocked write matches 0 rows instead of failing.
-// Throwing inside withUser rolls the transaction back; formatErrorMessage shows the MODVAULT text.
 const NOT_OWNED = 'MODVAULT:NOT_FOUND: Loadout or mod not found, or you do not own this loadout';
 
 function assertChanged(rowCount: number | null) {
   if (!rowCount) throw new Error(NOT_OWNED);
 }
 
-/**
- * Delete a loadout
- */
 export async function deleteLoadoutAction(
   loadoutIdOrPrevState: string | ActionState,
   maybeFormData?: FormData
@@ -140,9 +131,6 @@ export async function deleteLoadoutAction(
   }
 }
 
-/**
- * Update drag-and-drop order of mods in a loadout in a single transaction
- */
 export async function updateLoadoutOrderAction(
   loadoutId: string,
   orderedVersionIds: string[]
@@ -174,9 +162,6 @@ export async function updateLoadoutOrderAction(
   }
 }
 
-/**
- * Toggle enable/disable status for a mod in a loadout
- */
 export async function toggleModEnabledAction(
   loadoutId: string,
   versionId: string,
@@ -207,9 +192,6 @@ export async function toggleModEnabledAction(
   }
 }
 
-/**
- * Switch the active version of a mod in a loadout
- */
 export async function switchModVersionAction(
   loadoutId: string,
   oldVersionId: string,
@@ -224,7 +206,6 @@ export async function switchModVersionAction(
 
   try {
     await withUser(session, async (client) => {
-      // The new version must belong to the same mod as the one it replaces.
       const res = await client.query(
         `UPDATE loadout_mods x
          SET version_id = $1
@@ -243,9 +224,6 @@ export async function switchModVersionAction(
   }
 }
 
-/**
- * Remove a mod from a loadout
- */
 export async function removeModFromLoadoutAction(
   loadoutId: string,
   versionId: string
@@ -274,9 +252,6 @@ export async function removeModFromLoadoutAction(
   }
 }
 
-/**
- * Apply auto-sorted load order to a loadout (pr_apply_load_order)
- */
 export async function autoSortLoadoutAction(loadoutId: string): Promise<ActionState> {
   const session = await getSession();
   if (!session) return { error: 'Unauthorized' };
@@ -287,7 +262,6 @@ export async function autoSortLoadoutAction(loadoutId: string): Promise<ActionSt
 
   try {
     await withUser(session, async (client) => {
-      // An already sorted loadout updates 0 rows legitimately, so check ownership up front.
       const owned = await client.query(
         'SELECT 1 FROM loadouts WHERE loadout_id = $1 AND user_id = fn_current_user_id()',
         [data.loadoutId]
@@ -303,9 +277,6 @@ export async function autoSortLoadoutAction(loadoutId: string): Promise<ActionSt
   }
 }
 
-/**
- * Add a missing dependency's primary version to a loadout
- */
 export async function addMissingDependencyAction(
   loadoutId: string,
   relatedModId: string
@@ -319,7 +290,6 @@ export async function addMissingDependencyAction(
 
   try {
     await withUser(session, async (client) => {
-      // Find primary version of the related mod
       const verRes = await client.query<{ version_id: string }>(
         `SELECT version_id FROM mod_versions
          WHERE mod_id = $1
@@ -331,8 +301,6 @@ export async function addMissingDependencyAction(
       if (verRes.rows.length === 0) {
         throw new Error('MODVAULT:NOT_FOUND: No version found for required mod');
       }
-
-      // pr_add_mod_to_loadout raises NOT_FOUND or FORBIDDEN itself for a loadout the caller does not own.
       const primaryVersionId = verRes.rows[0].version_id;
       await client.query('CALL pr_add_mod_to_loadout($1::uuid, $2::uuid)', [
         data.loadoutId,
@@ -347,9 +315,6 @@ export async function addMissingDependencyAction(
   }
 }
 
-/**
- * Import a loadout from JSON manifest
- */
 export async function importLoadoutAction(
   prevState: ActionState,
   formData: FormData
@@ -400,9 +365,6 @@ const directImportSchema = z.object({
   sourceLoadoutId: uuid,
 });
 
-/**
- * Directly import a community-shared loadout into the current user's profile
- */
 export async function directImportLoadoutAction(
   sourceLoadoutId: string
 ): Promise<ActionState> {
@@ -420,7 +382,6 @@ export async function directImportLoadoutAction(
 
   try {
     newLoadoutId = await withUser(session, async (client) => {
-      // 1. Fetch source loadout details, ensuring it is public or accessible
       const sourceRes = await client.query<{
         game_id: string;
         name: string;
@@ -438,8 +399,6 @@ export async function directImportLoadoutAction(
       }
 
       const source = sourceRes.rows[0];
-
-      // 2. Insert new loadout for the current user (private by default)
       const newLoadoutRes = await client.query<{ loadout_id: string }>(
         `INSERT INTO loadouts (user_id, game_id, name, description, game_version, is_public)
          VALUES (fn_current_user_id(), $1, $2, $3, $4, FALSE)
@@ -449,8 +408,6 @@ export async function directImportLoadoutAction(
 
       const createdId = newLoadoutRes.rows[0]?.loadout_id;
       if (!createdId) throw new Error('Failed to create imported loadout');
-
-      // 3. Copy loadout_mods with sequential positions
       await client.query(
         `INSERT INTO loadout_mods (loadout_id, version_id, position, enabled)
          SELECT $1, version_id, (row_number() over (ORDER BY position ASC, id ASC) - 1)::int, enabled

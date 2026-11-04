@@ -61,7 +61,7 @@ GAME_METADATA = {
 }
 
 MOD_DETAILS = {
-    # Skyrim
+
     "skyrimspecialedition:12604": {
         "name": "SkyUI",
         "summary": "Elegant, PC-friendly interface mod with Mod Configuration Menu support.",
@@ -198,7 +198,6 @@ MOD_DETAILS = {
         "version": "1.5.0",
     },
 
-    # Fallout 4
     "fallout4:4598": {
         "name": "Unofficial Fallout 4 Patch",
         "summary": "Comprehensive bugfixing mod for Fallout 4.",
@@ -335,7 +334,6 @@ MOD_DETAILS = {
         "version": "2.0",
     },
 
-    # Stardew Valley
     "stardewvalley:2400": {
         "name": "SMAPI - Stardew Modding API",
         "summary": "The foundational mod loader and execution framework for Stardew Valley.",
@@ -473,7 +471,6 @@ MOD_DETAILS = {
     },
 }
 
-
 def main():
     print("Populating data/raw with 93 Nexus API v1 structure files...")
     with open(CURATED_DIR / "mods.yaml", encoding="utf-8") as f:
@@ -484,13 +481,11 @@ def main():
         domain_dir = RAW_DIR / domain
         domain_dir.mkdir(parents=True, exist_ok=True)
 
-        # 1. game.json
         game_path = domain_dir / "game.json"
         with open(game_path, "w", encoding="utf-8") as f:
             json.dump(g_info, f, indent=2)
         count += 1
 
-        # 2. mod and files JSONs
         domain_mods = [m for m in mods_yaml if m["ref"].startswith(f"{domain}:")]
         for m in domain_mods:
             ref = m["ref"]
@@ -536,7 +531,6 @@ def main():
             count += 1
 
     print(f"Generated {count} files in {RAW_DIR}. Target 93 files reached!")
-
 
 if __name__ == "__main__":
     main()

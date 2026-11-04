@@ -24,11 +24,9 @@ from db_reset import REPO_ROOT, fail, find_tool, read_database_url
 
 OUTPUT = REPO_ROOT / "docs" / "er-diagram.png"
 
-# GitHub dark palette.
 BG, BOX, HEADER, BORDER = "#0d1117", "#161b22", "#21262d", "#30363d"
 TEXT, MUTED, PK, FK, EDGE = "#e6edf3", "#8b949e", "#d29922", "#58a6ff", "#6e7681"
 
-# (column, row) grid slot per table. Columns are 0..3 left to right, rows top to bottom.
 LAYOUT = {
     "users": (0, 0), "games": (1, 0), "tags": (3, 0),
     "loadouts": (0, 1), "mods": (1, 1), "mod_tags": (3, 1),
@@ -55,13 +53,11 @@ WHERE  n.nspname = 'public' AND c.relkind = 'r'
 ORDER  BY c.relname, a.attnum
 """
 
-
 def short_type(t):
     for long, short in SHORT_TYPES.items():
         if t == long or t.startswith(long + "("):
             return short + t[len(long):]
     return t
-
 
 def read_schema():
     psql = find_tool("psql")
@@ -80,7 +76,6 @@ def read_schema():
         fail(f"LAYOUT and the database disagree on these tables: {sorted(missing)}")
     return tables
 
-
 def box_geometry(tables):
     """Top-left corner, width, height of each table box. Rows stack by the tallest box above."""
     heights = {t: HEAD_H + ROW_H * len(cols) + 0.15 for t, cols in tables.items()}
@@ -91,7 +86,6 @@ def box_geometry(tables):
         col_y[col] = y + heights[table] + GAP
     return geo
 
-
 def draw(tables):
     geo = box_geometry(tables)
     width = max(x + w for x, y, w, h in geo.values()) + 0.4
@@ -99,7 +93,7 @@ def draw(tables):
     fig, ax = plt.subplots(figsize=(width * 0.82, depth * 0.82), dpi=150)
     fig.patch.set_facecolor(BG)
     ax.set_facecolor(BG)
-    ax.set_xlim(-1.3, width)  # room for the same-column arrows that loop out on the left
+    ax.set_xlim(-1.3, width)
     ax.set_ylim(-depth + 0.4, 1.4)
     ax.axis("off")
 
@@ -124,7 +118,7 @@ def draw(tables):
         for i, c in enumerate(cols):
             cy = y - HEAD_H - ROW_H * (i + 0.5) - 0.05
             row_y[(table, c["name"])] = cy
-            # PF: part of the primary key and a foreign key (mod_tags).
+
             tag = ("PF" if c["fk"] else "PK") if c["pk"] else ("FK" if c["fk"] else "")
             ax.text(x + 0.15, cy, tag, color=FK if c["fk"] else PK, fontsize=7.5, fontweight="bold",
                     va="center", zorder=4, family="monospace")
@@ -141,11 +135,11 @@ def draw(tables):
             tx, ty, tw, _ = geo[c["fk"]]
             start_y = row_y[(table, c["name"])]
             end_y = ty - HEAD_H / 2
-            if tx > sx + sw:            # target to the right
+            if tx > sx + sw:
                 start, end, rad = (sx + sw, start_y), (tx, end_y), 0.15
-            elif tx + tw < sx:          # target to the left
+            elif tx + tw < sx:
                 start, end, rad = (sx, start_y), (tx + tw, end_y), 0.15
-            else:                       # same column: loop out on the left side, bulging ~0.8 units
+            else:
                 bulge = 0.8 / max(abs(start_y - end_y), 0.1)
                 start, end, rad = (sx, start_y), (tx, end_y), -bulge if ty > sy else bulge
             ax.add_patch(FancyArrowPatch(start, end, connectionstyle=f"arc3,rad={rad}", arrowstyle="-|>",
@@ -156,7 +150,6 @@ def draw(tables):
     print(f"er_diagram: wrote {OUTPUT.relative_to(REPO_ROOT)} "
           f"({len(tables)} tables, {sum(len(c) for c in tables.values())} columns, "
           f"{sum(1 for cols in tables.values() for c in cols if c['fk'])} foreign keys)")
-
 
 if __name__ == "__main__":
     draw(read_schema())

@@ -1,26 +1,6 @@
--- =============================================================================
--- ModVault: A Mod Repository and Compatibility Intelligence System
--- Procedure tests  --  tests/test_procedures.sql
---
--- Covers fn_export_loadout and every pr_ procedure: export then import gives
--- an equal manifest, a bad entry is skipped, role checks raise FORBIDDEN,
--- the compatibility upsert writes verified_by, and so on.
---
--- Each check runs inside BEGIN ... ROLLBACK and leaves no data behind.
--- A failed ASSERT stops the run (ON_ERROR_STOP=1). Each passing check prints
--- a NOTICE starting with PASS.
---
--- Fixture rows used: b..01 fx_modder, b..02 fx_curator, b..03 fx_admin,
--- e..01 fx_modder's private game A loadout (d1, d2, d4 at positions 0, 1, 2).
---
--- HOW TO RUN (after run_all.sql and tests/fixtures.sql)
---   psql "postgresql://modvault_owner:modvault_owner_dev@localhost:5432/modvault" -v ON_ERROR_STOP=1 -f database/tests/test_procedures.sql
--- =============================================================================
+
 
 SET client_encoding = 'UTF8';
-
-
--- 1. Export, import, export again: the two manifests are equal.
 BEGIN;
 DO $$
 DECLARE
@@ -46,10 +26,6 @@ BEGIN
     RAISE NOTICE 'PASS 1 export then import gives an equal manifest';
 END $$;
 ROLLBACK;
-
-
--- 2. One unresolved and one broken entry are skipped; the rest is imported.
---    An unknown semver falls back to the primary version.
 BEGIN;
 DO $$
 DECLARE
@@ -69,8 +45,6 @@ BEGIN
     ASSERT EXISTS (SELECT 1 FROM loadout_mods WHERE loadout_id = l
                    AND version_id = 'd0000000-0000-0000-0000-000000000002' AND position = 2 AND NOT enabled),
         'unknown semver did not fall back to the primary version, or position/enabled were lost';
-
-    -- A bad position is caught by the entry's own exception block.
     CALL pr_import_loadout('{
         "format": "modvault-loadout/1", "name": "FX import 2", "game_domain": "fx-game-a",
         "mods": [
@@ -79,8 +53,6 @@ BEGIN
         ]}'::jsonb, l, s);
     ASSERT s = 1 AND (SELECT count(*) FROM loadout_mods WHERE loadout_id = l) = 1,
         'a failing insert was not skipped';
-
-    -- The same mod twice at different versions: the first entry wins.
     CALL pr_import_loadout('{
         "format": "modvault-loadout/1", "name": "FX import 3", "game_domain": "fx-game-a",
         "mods": [
@@ -93,9 +65,6 @@ BEGIN
     RAISE NOTICE 'PASS 2 bad entries are skipped';
 END $$;
 ROLLBACK;
-
-
--- 3. Import errors: wrong format, unknown game, no user.
 BEGIN;
 DO $$
 DECLARE
@@ -124,9 +93,6 @@ BEGIN
     RAISE NOTICE 'PASS 3 import errors';
 END $$;
 ROLLBACK;
-
-
--- 4. A modder may not record compatibility.
 BEGIN;
 DO $$
 DECLARE
@@ -142,9 +108,6 @@ BEGIN
     RAISE NOTICE 'PASS 4 modder upsert raises FORBIDDEN';
 END $$;
 ROLLBACK;
-
-
--- 5. A curator inserts a new pair and updates an existing one given in reverse order.
 BEGIN;
 DO $$
 BEGIN
@@ -157,8 +120,6 @@ BEGIN
             WHERE version_a_id = 'd0000000-0000-0000-0000-000000000001'
               AND version_b_id = 'd0000000-0000-0000-0000-000000000005' AND status = 'partial')
            = 'b0000000-0000-0000-0000-000000000002', 'new pair not written with verified_by';
-
-    -- (d2, d5) is stored; pass it as (d5, d2).
     CALL pr_upsert_compatibility('d0000000-0000-0000-0000-000000000005', 'd0000000-0000-0000-0000-000000000002',
                                  'compatible', NULL);
     ASSERT (SELECT count(*) FROM compatibility_matrix
@@ -171,24 +132,17 @@ BEGIN
     RAISE NOTICE 'PASS 5 curator upsert writes verified_by';
 END $$;
 ROLLBACK;
-
-
--- 6. pr_add_mod_to_loadout: swap version in place, append a new mod, guard rails.
 BEGIN;
 DO $$
 DECLARE
     msg text;
 BEGIN
     PERFORM set_config('app.user_id', 'b0000000-0000-0000-0000-000000000001', true);
-
-    -- SkyUI 5.2.0 (d2, position 1) becomes 5.1.0 (d3) and keeps position 1.
     CALL pr_add_mod_to_loadout('e0000000-0000-0000-0000-000000000001', 'd0000000-0000-0000-0000-000000000003');
     ASSERT (SELECT position FROM loadout_mods WHERE loadout_id = 'e0000000-0000-0000-0000-000000000001'
             AND version_id = 'd0000000-0000-0000-0000-000000000003') = 1, 'version swap lost the position';
     ASSERT NOT EXISTS (SELECT 1 FROM loadout_mods WHERE loadout_id = 'e0000000-0000-0000-0000-000000000001'
                        AND version_id = 'd0000000-0000-0000-0000-000000000002'), 'old version still in loadout';
-
-    -- New mod appends at position 3. Adding it again changes nothing.
     CALL pr_add_mod_to_loadout('e0000000-0000-0000-0000-000000000001', 'd0000000-0000-0000-0000-000000000005');
     CALL pr_add_mod_to_loadout('e0000000-0000-0000-0000-000000000001', 'd0000000-0000-0000-0000-000000000005');
     ASSERT (SELECT position FROM loadout_mods WHERE loadout_id = 'e0000000-0000-0000-0000-000000000001'
@@ -206,8 +160,6 @@ BEGIN
         CALL pr_add_mod_to_loadout(gen_random_uuid(), 'd0000000-0000-0000-0000-000000000005');
     EXCEPTION WHEN raise_exception THEN msg := SQLERRM; END;
     ASSERT msg LIKE 'MODVAULT:NOT_FOUND: %', 'unknown loadout did not raise NOT_FOUND';
-
-    -- e..02 belongs to fx_admin.
     msg := NULL;
     BEGIN
         CALL pr_add_mod_to_loadout('e0000000-0000-0000-0000-000000000002', 'd0000000-0000-0000-0000-000000000008');
@@ -216,9 +168,6 @@ BEGIN
     RAISE NOTICE 'PASS 6 pr_add_mod_to_loadout';
 END $$;
 ROLLBACK;
-
-
--- 7. pr_apply_load_order writes the suggested order: SkyUI after its requirement.
 BEGIN;
 DO $$
 BEGIN
@@ -238,9 +187,6 @@ BEGIN
     RAISE NOTICE 'PASS 7 pr_apply_load_order';
 END $$;
 ROLLBACK;
-
-
--- 8. pr_promote_version: a modder is refused, a curator moves the primary flag.
 BEGIN;
 DO $$
 DECLARE
@@ -269,9 +215,6 @@ BEGIN
     RAISE NOTICE 'PASS 8 pr_promote_version: modder refused, curator promotes';
 END $$;
 ROLLBACK;
-
-
--- 9. pr_publish_mod: needs a user; writes mod, primary version and tags.
 BEGIN;
 DO $$
 DECLARE
@@ -295,9 +238,6 @@ BEGIN
     RAISE NOTICE 'PASS 9 pr_publish_mod';
 END $$;
 ROLLBACK;
-
-
--- 10. Admin only: pr_set_user_role and pr_refresh_reports.
 BEGIN;
 DO $$
 DECLARE

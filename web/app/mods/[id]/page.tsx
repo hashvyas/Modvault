@@ -93,7 +93,6 @@ export default async function ModDetailPage({ params }: Props) {
 
   try {
     const data = await withUser(session, async (client) => {
-      // 1. Fetch Mod Details
       const modRes = await client.query<ModDetailRow>(
         `SELECT m.mod_id, m.name, m.summary, m.category, m.nexus_author, m.nexus_mod_id,
                 m.download_count, m.rating_avg, m.rating_count, m.game_id,
@@ -110,14 +109,10 @@ export default async function ModDetailPage({ params }: Props) {
         return null;
       }
       const modData = modRes.rows[0];
-
-      // 2. Fetch Stats via fn_mod_stats
       const statsRes = await client.query<ModStatsRow>(
         'SELECT * FROM fn_mod_stats($1)',
         [id]
       );
-
-      // 3. Fetch Versions
       const versionsRes = await client.query<VersionRow>(
         `SELECT version_id, semver, is_primary, supported_game_versions, changelog, uploaded_at::text
          FROM mod_versions
@@ -127,8 +122,6 @@ export default async function ModDetailPage({ params }: Props) {
       );
 
       const primaryVer = versionsRes.rows.find((v) => v.is_primary) ?? versionsRes.rows[0];
-
-      // 4. Fetch Dependency Tree via fn_get_mod_dependency_tree
       let deps: DependencyNodeData[] = [];
       if (primaryVer) {
         const depRes = await client.query<DependencyNodeData>(
@@ -137,8 +130,6 @@ export default async function ModDetailPage({ params }: Props) {
         );
         deps = depRes.rows;
       }
-
-      // 5. Fetch Compatibility Matrix Rows
       const compatRes = await client.query<CompatRow>(
         `SELECT cm.compat_id, cm.status, cm.conflict_detail,
                 va.semver AS semver_a, ma.mod_id AS mod_a_id, ma.name AS mod_a_name,
@@ -154,8 +145,6 @@ export default async function ModDetailPage({ params }: Props) {
          ORDER BY cm.status, cm.updated_at DESC`,
         [id]
       );
-
-      // 6. Fetch Tags
       const tagRes = await client.query<TagItem>(
         `SELECT t.tag_id, t.name, t.slug
          FROM tags t
@@ -164,8 +153,6 @@ export default async function ModDetailPage({ params }: Props) {
          ORDER BY t.name ASC`,
         [id]
       );
-
-      // 7. Fetch User's Loadouts for this game (if logged in)
       let loadouts: LoadoutOption[] = [];
       const currentUserId = session?.sub;
       if (currentUserId) {
@@ -220,7 +207,7 @@ export default async function ModDetailPage({ params }: Props) {
 
   return (
     <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-10">
-      {/* Mod Header */}
+      {}
       <section className="space-y-4 border-b border-border pb-8">
         <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
           <div className="space-y-2 max-w-3xl">
@@ -265,7 +252,7 @@ export default async function ModDetailPage({ params }: Props) {
           </div>
         </div>
 
-        {/* Tags */}
+        {}
         {tags.length > 0 && (
           <div className="flex flex-wrap gap-1.5 pt-1">
             {tags.map((t) => (
@@ -281,14 +268,14 @@ export default async function ModDetailPage({ params }: Props) {
           </div>
         )}
 
-        {/* Summary */}
+        {}
         {mod.summary && (
           <p className="text-base text-muted-foreground leading-relaxed pt-2 max-w-4xl">
             {mod.summary}
           </p>
         )}
 
-        {/* Mod Stats Strip (from fn_mod_stats) */}
+        {}
         {stats && (
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-4">
             <div className="p-3 rounded-xl bg-card/40 border border-border text-center">
@@ -326,7 +313,7 @@ export default async function ModDetailPage({ params }: Props) {
         )}
       </section>
 
-      {/* Add To Loadout Picker */}
+      {}
       <section>
         <AddToLoadoutPicker
           modId={mod.mod_id}
@@ -336,9 +323,9 @@ export default async function ModDetailPage({ params }: Props) {
         />
       </section>
 
-      {/* Two Column Layout: Versions & Compatibility */}
+      {}
       <div className="grid gap-8 lg:grid-cols-2">
-        {/* Versions Table */}
+        {}
         <section className="space-y-4">
           <div>
             <h2 className="text-xl font-bold tracking-tight">Available Versions</h2>
@@ -353,7 +340,7 @@ export default async function ModDetailPage({ params }: Props) {
           />
         </section>
 
-        {/* Compatibility Matrix List */}
+        {}
         <section className="space-y-4">
           <div>
             <h2 className="text-xl font-bold tracking-tight">Compatibility Matrix</h2>
@@ -423,7 +410,7 @@ export default async function ModDetailPage({ params }: Props) {
         </section>
       </div>
 
-      {/* Dependency Graph (React Flow) */}
+      {}
       <section className="space-y-4">
         <div>
           <h2 className="text-xl font-bold tracking-tight">Dependency Architecture Graph</h2>

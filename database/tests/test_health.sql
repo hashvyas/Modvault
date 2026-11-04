@@ -1,32 +1,6 @@
--- =============================================================================
--- ModVault: A Mod Repository and Compatibility Intelligence System
--- Health check tests  --  tests/test_health.sql
---
--- One fixture loadout per issue type (contract section 6.6). Each test asserts
--- its issue appears exactly once with the right severity. Also: a clean
--- loadout scores 100, a disabled conflicting mod is ignored, the score follows
--- the formula and unknown ids behave as the contract says.
---
--- Each check runs inside BEGIN ... ROLLBACK and leaves no data behind.
--- A failed ASSERT stops the run (ON_ERROR_STOP=1). Each passing check prints
--- a NOTICE starting with PASS.
---
--- Fixture versions used (game A unless noted):
---   d1 Script Extender 2.2.6 (supports 1.6.1170)   d2 SkyUI 5.2.0
---   d4 Unofficial Patch 4.3.0   d5 Alternate UI 1.0.0
---   d6 F4 Script Extender 0.6.23 (game B)   d7 Armorsmith 2.0.0 (game B)
---   d2 requires c1 '>=2.2', recommends c3, conflicts c4. d5 optional c1.
---   Matrix: (d2,d4) compatible, (d2,d5) incompatible, (d1,d4) unknown,
---   (d6,d7) partial.
---
--- HOW TO RUN (after run_all.sql and tests/fixtures.sql)
---   psql "postgresql://modvault_owner:modvault_owner_dev@localhost:5432/modvault" -v ON_ERROR_STOP=1 -f database/tests/test_health.sql
--- =============================================================================
+
 
 SET client_encoding = 'UTF8';
-
--- Test helpers, dropped with the session.
--- Creates a loadout owned by fx_modder holding the given versions in array order.
 CREATE FUNCTION pg_temp.fx_loadout(p_game uuid, p_game_version text, p_versions uuid[])
 RETURNS uuid LANGUAGE plpgsql AS $$
 DECLARE
@@ -39,8 +13,6 @@ BEGIN
     SELECT l, v, (o - 1)::int FROM unnest(p_versions) WITH ORDINALITY AS t(v, o);
     RETURN l;
 END $$;
-
--- Asserts the issue type appears exactly once in the loadout, with the given severity.
 CREATE FUNCTION pg_temp.fx_assert_once(p_loadout uuid, p_type text, p_severity text)
 RETURNS void LANGUAGE plpgsql AS $$
 BEGIN
@@ -49,9 +21,6 @@ BEGIN
     ASSERT (SELECT severity FROM fn_check_loadout_compatibility(p_loadout) WHERE issue_type = p_type) = p_severity,
         format('%s severity is not %s', p_type, p_severity);
 END $$;
-
-
--- 1. MISSING_DEPENDENCY: SkyUI without its required script extender.
 BEGIN;
 DO $$
 DECLARE
@@ -66,9 +35,6 @@ BEGIN
     RAISE NOTICE 'PASS 1 MISSING_DEPENDENCY';
 END $$;
 ROLLBACK;
-
-
--- 2. DECLARED_CONFLICT: conflict declared on both sides is still one pair.
 BEGIN;
 DO $$
 DECLARE
@@ -83,9 +49,6 @@ BEGIN
     RAISE NOTICE 'PASS 2 DECLARED_CONFLICT';
 END $$;
 ROLLBACK;
-
-
--- 3. INCOMPATIBLE_PAIR: matrix says (d2, d5) incompatible.
 BEGIN;
 DO $$
 DECLARE
@@ -96,9 +59,6 @@ BEGIN
     RAISE NOTICE 'PASS 3 INCOMPATIBLE_PAIR';
 END $$;
 ROLLBACK;
-
-
--- 4. LOAD_ORDER: SkyUI at position 0, its requirement at position 1.
 BEGIN;
 DO $$
 DECLARE
@@ -110,9 +70,6 @@ BEGIN
     RAISE NOTICE 'PASS 4 LOAD_ORDER';
 END $$;
 ROLLBACK;
-
-
--- 5. VERSION_CONSTRAINT: SkyUI needs script extender >=3.0, 2.2.6 is installed.
 BEGIN;
 DO $$
 DECLARE
@@ -128,9 +85,6 @@ BEGIN
     RAISE NOTICE 'PASS 5 VERSION_CONSTRAINT';
 END $$;
 ROLLBACK;
-
-
--- 6. GAME_VERSION_MISMATCH: script extender supports 1.6.1170 only.
 BEGIN;
 DO $$
 DECLARE
@@ -141,9 +95,6 @@ BEGIN
     RAISE NOTICE 'PASS 6 GAME_VERSION_MISMATCH';
 END $$;
 ROLLBACK;
-
-
--- 7. PARTIAL_PAIR: game B pair marked partial; message carries the reason.
 BEGIN;
 DO $$
 DECLARE
@@ -157,9 +108,6 @@ BEGIN
     RAISE NOTICE 'PASS 7 PARTIAL_PAIR';
 END $$;
 ROLLBACK;
-
-
--- 8. MISSING_RECOMMENDED: SkyUI recommends the unofficial patch.
 BEGIN;
 DO $$
 DECLARE
@@ -170,9 +118,6 @@ BEGIN
     RAISE NOTICE 'PASS 8 MISSING_RECOMMENDED';
 END $$;
 ROLLBACK;
-
-
--- 9. UNVERIFIED_PAIR: once for an 'unknown' matrix row, once for no row at all.
 BEGIN;
 DO $$
 DECLARE
@@ -186,9 +131,6 @@ BEGIN
     RAISE NOTICE 'PASS 9 UNVERIFIED_PAIR';
 END $$;
 ROLLBACK;
-
-
--- 10. Clean loadout: no errors or warnings, score 100, status rule gives healthy.
 BEGIN;
 DO $$
 DECLARE
@@ -205,9 +147,6 @@ BEGIN
     RAISE NOTICE 'PASS 10 clean loadout scores 100';
 END $$;
 ROLLBACK;
-
-
--- 11. A disabled conflicting mod produces no issue at all.
 BEGIN;
 DO $$
 DECLARE
@@ -227,9 +166,6 @@ BEGIN
     RAISE NOTICE 'PASS 11 disabled mod ignored';
 END $$;
 ROLLBACK;
-
-
--- 12. Score formula, result order, unknown ids.
 BEGIN;
 DO $$
 DECLARE
@@ -244,8 +180,6 @@ BEGIN
     INTO errors, warnings FROM fn_check_loadout_compatibility(l);
     ASSERT errors > 0 AND warnings > 0, 'score test loadout needs errors and warnings';
     ASSERT fn_loadout_health_score(l) = greatest(0, 100 - 25 * errors - 10 * warnings), 'score does not follow the formula';
-
-    -- Severity order error, warning, info.
     ASSERT (SELECT bool_and(s >= prev_s) FROM (
                 SELECT s, lag(s, 1, 0) OVER (ORDER BY o) AS prev_s
                 FROM fn_check_loadout_compatibility(l)

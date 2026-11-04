@@ -3,8 +3,6 @@ const tone = {
   warnings: 'text-amber-400',
   broken: 'text-rose-400',
 } as const;
-
-// Thin arc gauge: the arc carries the value, the number stays quiet.
 export function ScoreMeter({
   score,
   status,

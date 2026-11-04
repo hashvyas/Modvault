@@ -91,7 +91,7 @@ export default async function HomePage() {
 
   return (
     <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-16">
-      {/* Hero & Search Bar */}
+      {}
       <section className="text-center space-y-6 max-w-3xl mx-auto">
         <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight">
           Pre-flight mod compatibility and smart discovery.
@@ -112,7 +112,7 @@ export default async function HomePage() {
         </form>
       </section>
 
-      {/* Three Game Cards */}
+      {}
       <section className="space-y-6">
         <div>
           <h2 className="text-2xl font-bold tracking-tight">Supported Games</h2>
@@ -128,7 +128,7 @@ export default async function HomePage() {
                       {g.name}
                     </CardTitle>
                     <Badge variant="secondary" className="font-mono text-xs">
-                      {g.domain}
+                      {g.name}
                     </Badge>
                   </div>
                   <CardDescription>
@@ -147,7 +147,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* Featured Mods */}
+      {}
       {featuredMods.length > 0 && (
         <section className="space-y-6">
           <div className="flex items-center justify-between">
@@ -194,7 +194,7 @@ export default async function HomePage() {
         </section>
       )}
 
-      {/* Leaderboard Strip from mv_game_leaderboard */}
+      {}
       {leaderboard.length > 0 && (
         <section className="space-y-6">
           <div>

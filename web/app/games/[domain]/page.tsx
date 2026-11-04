@@ -58,7 +58,6 @@ export default async function GameBrowsePage({ params, searchParams }: Props) {
 
   try {
     const data = await withUser(session, async (client) => {
-      // 1. Fetch game details
       const gameRes = await client.query<GameInfo>(
         'SELECT game_id, name, domain, current_version FROM games WHERE domain = $1',
         [domain]
@@ -67,14 +66,10 @@ export default async function GameBrowsePage({ params, searchParams }: Props) {
         return null;
       }
       const g = gameRes.rows[0];
-
-      // 2. Fetch distinct categories for this game
       const catRes = await client.query<{ category: string }>(
         'SELECT DISTINCT category FROM mods WHERE game_id = $1 AND category IS NOT NULL ORDER BY category ASC',
         [g.game_id]
       );
-
-      // 3. Fetch distinct tags for this game
       const tagRes = await client.query<{ slug: string; name: string }>(`
         SELECT DISTINCT t.slug, t.name
         FROM tags t
@@ -83,8 +78,6 @@ export default async function GameBrowsePage({ params, searchParams }: Props) {
         WHERE m.game_id = $1
         ORDER BY t.name ASC
       `, [g.game_id]);
-
-      // 4. Construct SQL for sorted, filtered, paginated query
       let orderClause = 'ORDER BY m.download_count DESC, m.name';
       if (currentSort === 'rating') {
         orderClause = 'ORDER BY m.rating_avg DESC, m.rating_count DESC, m.download_count DESC';
@@ -106,8 +99,6 @@ export default async function GameBrowsePage({ params, searchParams }: Props) {
       }
 
       const whereClause = conditions.join(' AND ');
-
-      // Total count query
       const countRes = await client.query<{ count: string }>(
         `SELECT count(*)::text as count
          FROM mod_catalog_view v
@@ -116,8 +107,6 @@ export default async function GameBrowsePage({ params, searchParams }: Props) {
         queryParams
       );
       const total = parseInt(countRes.rows[0]?.count ?? '0', 10);
-
-      // Paginated mods query
       queryParams.push(PAGE_SIZE);
       const limitParamIdx = queryParams.length;
       queryParams.push(offset);
@@ -161,7 +150,7 @@ export default async function GameBrowsePage({ params, searchParams }: Props) {
 
   return (
     <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-      {/* Game Header Banner */}
+      {}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-border pb-6">
         <div>
           <div className="flex items-center gap-3">
@@ -188,9 +177,9 @@ export default async function GameBrowsePage({ params, searchParams }: Props) {
         </div>
       </div>
 
-      {/* Filters and Sorting Controls */}
+      {}
       <form method="GET" className="grid gap-3 sm:grid-cols-2 md:grid-cols-4 bg-card/40 p-4 rounded-xl border border-border">
-        {/* Category Filter */}
+        {}
         <div className="space-y-1">
           <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
             Category
@@ -209,7 +198,7 @@ export default async function GameBrowsePage({ params, searchParams }: Props) {
           </select>
         </div>
 
-        {/* Tag Filter */}
+        {}
         <div className="space-y-1">
           <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
             Tag
@@ -228,7 +217,7 @@ export default async function GameBrowsePage({ params, searchParams }: Props) {
           </select>
         </div>
 
-        {/* Sort Order */}
+        {}
         <div className="space-y-1">
           <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
             Sort By
@@ -243,7 +232,7 @@ export default async function GameBrowsePage({ params, searchParams }: Props) {
           </select>
         </div>
 
-        {/* Apply & Reset */}
+        {}
         <div className="flex items-end gap-2">
           <Button type="submit" className="flex-1">
             Filter
@@ -256,7 +245,7 @@ export default async function GameBrowsePage({ params, searchParams }: Props) {
         </div>
       </form>
 
-      {/* Mods Grid */}
+      {}
       {mods.length === 0 ? (
         <div className="text-center py-16 space-y-4 border border-dashed border-border rounded-xl">
           <p className="text-lg font-medium text-muted-foreground">No mods match the selected filters.</p>
@@ -306,7 +295,7 @@ export default async function GameBrowsePage({ params, searchParams }: Props) {
         </div>
       )}
 
-      {/* Pagination Controls */}
+      {}
       {totalPages > 1 && (
         <div className="flex items-center justify-center gap-2 pt-4">
           {currentPage > 1 && (

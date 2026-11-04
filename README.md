@@ -1,11 +1,9 @@
 # ModVault
 
-[![db](https://github.com/hashvyas/Modvault/actions/workflows/db.yml/badge.svg)](https://github.com/hashvyas/Modvault/actions/workflows/db.yml)
-[![Web Application CI](https://github.com/hashvyas/Modvault/actions/workflows/app.yml/badge.svg)](https://github.com/hashvyas/Modvault/actions/workflows/app.yml)
 
 ModVault checks a game mod loadout before you launch the game. Pick a game, build an ordered list of mod versions, and ModVault reports which mods miss a dependency, which pairs conflict, which load in the wrong order and which do not support your game version. Find mods with hybrid search that understands meaning ("make the menus look better"), not only keywords.
 
-Seeded with 45 real mods (15 each for Skyrim Special Edition, Fallout 4 and Stardew Valley) from the Nexus Mods API. Built for the PES University DBMS mini project.
+Seeded with 45 real mods (15 each for Skyrim Special Edition, Fallout 4 and Stardew Valley) from the Nexus Mods API.
 
 ## Architecture
 

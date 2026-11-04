@@ -65,7 +65,6 @@ export async function loginAction(
   }
 
   const next = formData.get('next')?.toString() || '/';
-  // Only same-site paths: "//host" and absolute URLs would redirect off-site.
   redirect(next.startsWith('/') && !next.startsWith('//') && !next.startsWith('/\\') ? next : '/');
 }
 
@@ -93,8 +92,6 @@ export async function registerAction(
         password,
       ]);
     });
-
-    // Auto-login per spec
     const user = await withUser(null, async (client) => {
       const res = await client.query<{
         user_id: string;

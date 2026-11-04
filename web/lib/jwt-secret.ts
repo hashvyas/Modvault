@@ -1,4 +1,4 @@
-// Shared by lib/session.ts (Node) and middleware.ts (Edge), so it must stay free of Node-only imports.
+
 export function getJwtSecretKey(): Uint8Array {
   const secret = process.env.JWT_SECRET;
   if (!secret || secret.length < 32) {

@@ -39,9 +39,6 @@ export type ActionState = {
   error?: string | null;
 };
 
-/**
- * Promote a version to primary (Curators and Admins only)
- */
 export async function promoteVersionAction(
   prevState: ActionState,
   formData: FormData
@@ -75,9 +72,6 @@ export async function promoteVersionAction(
   }
 }
 
-/**
- * Insert or update user review for a mod
- */
 export async function reviewModAction(
   prevState: ActionState,
   formData: FormData
@@ -118,9 +112,6 @@ export async function reviewModAction(
   }
 }
 
-/**
- * Add a mod version to a user loadout
- */
 export async function addToLoadoutAction(
   prevState: ActionState,
   formData: FormData
@@ -160,9 +151,6 @@ export async function addToLoadoutAction(
   }
 }
 
-/**
- * Publish a new mod
- */
 export async function publishModAction(
   prevState: ActionState,
   formData: FormData
@@ -187,16 +175,12 @@ export async function publishModAction(
   }
 
   const { game_id, name, summary, category, semver } = parsed.data;
-
-  // Split comma or space separated tags into array of slugs
   const tagList = rawTags
     .split(/[,;\s]+/)
     .map((t) => t.trim().toLowerCase().replace(/[^a-z0-9-]/g, '-'))
     .filter((t) => t.length > 0);
 
   let newModId: string | null = null;
-
-  // Generate 384-dimension vector embedding for new mod; never publish with a NULL embedding.
   let pgEmbedding: string;
   try {
     pgEmbedding = toPgVector(await embed(`${name}. ${category}. ${summary}`));

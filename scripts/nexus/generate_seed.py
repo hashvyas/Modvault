@@ -19,11 +19,9 @@ CURATED_DIR = REPO_ROOT / "data" / "curated"
 RAW_DIR = REPO_ROOT / "data" / "raw"
 DATABASE_DIR = REPO_ROOT / "database"
 
-
 def gen_uuid(kind: str, key: str) -> str:
     """Generate a deterministic UUIDv5 in the modvault namespace."""
     return str(uuid.uuid5(uuid.NAMESPACE_URL, f"modvault:{kind}:{key}"))
-
 
 def sql_str(val) -> str:
     """Escape and quote a SQL string literal, or return NULL."""
@@ -32,25 +30,22 @@ def sql_str(val) -> str:
     escaped = str(val).replace("'", "''")
     return f"'{escaped}'"
 
-
 def strip_html_bbcode(text: str) -> str:
     """Remove HTML tags, BBCode tags, and clean up excess whitespace."""
     if not text:
         return ""
-    # Remove HTML tags
+
     clean = re.sub(r"<[^>]+>", " ", text)
-    # Remove BBCode tags like [b]...[/b], [url=...]...[/url]
+
     clean = re.sub(r"\[/?[a-zA-Z0-9_-]+(?:=[^\]]+)?\]", " ", clean)
-    # Replace multiple spaces / newlines
+
     clean = re.sub(r"[ \t]+", " ", clean)
     clean = re.sub(r"\n\s*\n+", "\n\n", clean)
     return clean.strip()
 
-
 def main():
     print("Generating seed.sql and seed_expectations.sql...")
 
-    # 1. Load curated YAML files
     with open(CURATED_DIR / "games.yaml", encoding="utf-8") as f:
         games_yaml = yaml.safe_load(f)
     with open(CURATED_DIR / "mods.yaml", encoding="utf-8") as f:
@@ -70,7 +65,6 @@ def main():
 
     mods_by_ref = {m["ref"]: m for m in mods_yaml}
 
-    # 2. Check that data/raw has needed files
     for g in games_yaml:
         domain = g["domain"]
         game_raw = RAW_DIR / domain / "game.json"
@@ -89,7 +83,6 @@ def main():
         "",
     ]
 
-    # SECTION 1: GAMES
     lines.append("-- 1. GAMES")
     game_id_by_domain = {}
     categories_by_domain = {}
@@ -116,7 +109,6 @@ def main():
         )
     lines.append("")
 
-    # SECTION 2: USERS
     lines.append("-- 2. USERS")
     user_id_by_username = {}
     for u in users_yaml:
@@ -126,7 +118,7 @@ def main():
         email = u["email"]
         role = u["role"]
         if "password_env" in u:
-            # Privileged passwords come from the environment so they never live in the repo.
+
             env_name = u["password_env"]
             var = env_name.lower()
             lines += [
@@ -148,7 +140,6 @@ def main():
         )
     lines.append("")
 
-    # SECTION 3: TAGS
     lines.append("-- 3. TAGS")
     tag_id_by_slug = {}
     for t in tags_yaml:
@@ -164,10 +155,9 @@ def main():
         )
     lines.append("")
 
-    # SECTION 4: MODS
     lines.append("-- 4. MODS")
     mod_id_by_ref = {}
-    # Featured mods highlight
+
     featured_refs = {
         "skyrimspecialedition:12604",
         "skyrimspecialedition:266",
@@ -205,7 +195,6 @@ def main():
         )
     lines.append("")
 
-    # SECTION 5: MOD VERSIONS
     lines.append("-- 5. MOD VERSIONS")
     version_id_by_ref_semver = {}
     primary_version_by_ref = {}
@@ -220,7 +209,7 @@ def main():
             raw_files = json.load(f)
 
         files_list = raw_files.get("files", [])
-        # Filter files: category_name in MAIN or OLD_VERSION
+
         eligible_files = [
             f
             for f in files_list
@@ -228,10 +217,9 @@ def main():
         ]
 
         if not eligible_files:
-            # Fallback to any file if no MAIN or OLD_VERSION
+
             eligible_files = files_list[:1] if files_list else []
 
-        # Group by semver (newest uploaded_timestamp wins)
         files_by_semver = {}
         for file_entry in sorted(eligible_files, key=lambda x: int(x.get("uploaded_timestamp", 0)), reverse=True):
             semver = str(file_entry.get("version", "")).strip() or "0.0.0"
@@ -239,7 +227,6 @@ def main():
             if semver not in files_by_semver:
                 files_by_semver[semver] = file_entry
 
-        # Pick primary version: newest MAIN file, or newest file overall
         main_files = [f for f in eligible_files if str(f.get("category_name", "")).upper() == "MAIN"]
         if main_files:
             newest_main = max(main_files, key=lambda x: int(x.get("uploaded_timestamp", 0)))
@@ -250,7 +237,6 @@ def main():
             primary_semver = "1.0.0"
             files_by_semver["1.0.0"] = {"file_id": 1, "uploaded_timestamp": 1500000000, "description": "Release"}
 
-        # Emit mod_versions
         versions_by_mod_ref[ref] = []
         yaml_supported = m_cfg.get("supported_game_versions", {}) or {}
 
@@ -265,7 +251,6 @@ def main():
             if is_primary == "TRUE":
                 primary_version_by_ref[ref] = v_id
 
-            # supported_game_versions TEXT[]
             sup_versions = yaml_supported.get(semver, [])
             if sup_versions:
                 sup_array_sql = "ARRAY[" + ", ".join(sql_str(v) for v in sup_versions) + "]::TEXT[]"
@@ -286,7 +271,6 @@ def main():
             primary_version_by_ref[ref] = versions_by_mod_ref[ref][0]
     lines.append("")
 
-    # SECTION 6: MOD TAGS
     lines.append("-- 6. MOD TAGS")
     for t in tags_yaml:
         t_id = tag_id_by_slug[t["slug"]]
@@ -298,7 +282,6 @@ def main():
             )
     lines.append("")
 
-    # SECTION 7: MOD DEPENDENCIES
     lines.append("-- 7. MOD DEPENDENCIES")
     for dep in dependencies_yaml:
         mod_ref = dep["mod"]
@@ -308,7 +291,7 @@ def main():
         constraint = dep.get("constraint")
 
         req_mod_id = mod_id_by_ref[req_ref]
-        # Applies to every version of mod_ref
+
         for v_id in versions_by_mod_ref.get(mod_ref, []):
             d_id = gen_uuid("dep", f"{v_id}:{req_mod_id}:{dep_type}")
             lines.append(
@@ -319,7 +302,6 @@ def main():
             )
     lines.append("")
 
-    # SECTION 8: COMPATIBILITY MATRIX
     lines.append("-- 8. COMPATIBILITY MATRIX")
     for cmp in compat_yaml:
         ref_a = cmp["a"]
@@ -330,7 +312,6 @@ def main():
         v_a = version_id_by_ref_semver.get(f"{ref_a}@{a_semver}") if a_semver else primary_version_by_ref[ref_a]
         v_b = version_id_by_ref_semver.get(f"{ref_b}@{b_semver}") if b_semver else primary_version_by_ref[ref_b]
 
-        # Enforce canonical order (v_a < v_b)
         if v_a > v_b:
             v_a, v_b = v_b, v_a
 
@@ -348,7 +329,6 @@ def main():
         )
     lines.append("")
 
-    # SECTION 9: REVIEWS
     lines.append("-- 9. REVIEWS")
     for r in reviews_yaml:
         username = r["user"]
@@ -366,7 +346,6 @@ def main():
         )
     lines.append("")
 
-    # SECTION 10: LOADOUTS & LOADOUT_MODS
     lines.append("-- 10. LOADOUTS & LOADOUT_MODS")
     for ld in loadouts_yaml:
         name = ld["name"]
@@ -423,13 +402,11 @@ def main():
     lines.append("COMMIT;")
     lines.append("")
 
-    # Write seed.sql
     seed_sql_path = DATABASE_DIR / "seed.sql"
     with open(seed_sql_path, "w", encoding="utf-8", newline="\n") as f:
         f.write("\n".join(lines))
     print(f"Wrote {seed_sql_path}")
 
-    # Write seed_expectations.sql
     expectations_lines = [
         "-- =============================================================================",
         "-- ModVault: Seed Verification and Health Expectations",
@@ -487,7 +464,6 @@ def main():
     with open(expect_path, "w", encoding="utf-8", newline="\n") as f:
         f.write("\n".join(expectations_lines))
     print(f"Wrote {expect_path}")
-
 
 if __name__ == "__main__":
     main()

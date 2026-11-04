@@ -1,19 +1,6 @@
--- =============================================================================
--- ModVault: A Mod Repository and Compatibility Intelligence System
--- Trigger tests  --  tests/test_triggers.sql
---
--- Each check runs inside BEGIN ... ROLLBACK and leaves no data behind.
--- A failed ASSERT stops the run (ON_ERROR_STOP=1). Each passing check prints
--- a NOTICE starting with PASS.
---
--- HOW TO RUN (after run_all.sql and tests/fixtures.sql)
---   psql "postgresql://modvault_owner:modvault_owner_dev@localhost:5432/modvault" -v ON_ERROR_STOP=1 -f database/tests/test_triggers.sql
--- =============================================================================
+
 
 SET client_encoding = 'UTF8';
-
-
--- 1. trg_compat_canonicalise_pair: (B, A) is stored as (A, B); (A, B) again is a duplicate.
 BEGIN;
 DO $$
 DECLARE
@@ -33,9 +20,6 @@ BEGIN
     RAISE NOTICE 'PASS 1 compat pair canonicalised';
 END $$;
 ROLLBACK;
-
-
--- 2. trg_mod_version_single_primary: promoting a version demotes the old primary.
 BEGIN;
 DO $$
 DECLARE
@@ -51,9 +35,6 @@ BEGIN
     RAISE NOTICE 'PASS 2 single primary version';
 END $$;
 ROLLBACK;
-
-
--- 3. trg_loadout_mods_game_check: a mod from another game raises GAME_MISMATCH.
 BEGIN;
 DO $$
 DECLARE
@@ -69,9 +50,6 @@ BEGIN
     RAISE NOTICE 'PASS 3 game mismatch rejected';
 END $$;
 ROLLBACK;
-
-
--- 4. trg_reviews_rating_rollup: cached rating equals mod_ratings_view.
 BEGIN;
 DO $$
 DECLARE
@@ -86,24 +64,17 @@ BEGIN
             FROM mods mo JOIN mod_ratings_view v USING (mod_id) WHERE mo.mod_id = m),
         'rating cache does not match mod_ratings_view after inserts';
     ASSERT (SELECT rating_avg FROM mods WHERE mod_id = m) = 4.33, 'rating_avg is not 4.33';
-
-    -- UPDATE moving a review to another mod refreshes both mods.
     UPDATE reviews SET mod_id = m2 WHERE user_id = 'b0000000-0000-0000-0000-000000000001' AND mod_id = m;
     ASSERT (SELECT count(*) FROM mods mo JOIN mod_ratings_view v USING (mod_id)
             WHERE mo.mod_id IN (m, m2)
               AND mo.rating_count = v.review_count AND mo.rating_avg = v.avg_rating) = 2,
         'rating cache wrong for OLD or NEW mod after update';
-
-    -- DELETE of the last review resets the cache to 0.
     DELETE FROM reviews WHERE mod_id = m2;
     ASSERT (SELECT rating_avg = 0 AND rating_count = 0 FROM mods WHERE mod_id = m2),
         'rating cache not reset after deleting the last review';
     RAISE NOTICE 'PASS 4 rating rollup';
 END $$;
 ROLLBACK;
-
-
--- 5. trg_audit_users: audit row hides password_hash and records the session user.
 BEGIN;
 DO $$
 DECLARE
@@ -121,9 +92,6 @@ BEGIN
     RAISE NOTICE 'PASS 5 audit row without password_hash';
 END $$;
 ROLLBACK;
-
-
--- 6. trg_audit_log_immutable: DELETE FROM audit_log raises FORBIDDEN.
 BEGIN;
 DO $$
 DECLARE
@@ -139,9 +107,6 @@ BEGIN
     RAISE NOTICE 'PASS 6 audit log is append-only';
 END $$;
 ROLLBACK;
-
-
--- 7. trg_loadout_mods_position: two inserts without position get 0 and 1.
 BEGIN;
 DO $$
 DECLARE
@@ -156,9 +121,6 @@ BEGIN
     RAISE NOTICE 'PASS 7 auto position';
 END $$;
 ROLLBACK;
-
-
--- 8. trg_audit_log_immutable: changing old_row on an audit row raises FORBIDDEN.
 BEGIN;
 DO $$
 DECLARE
@@ -175,10 +137,6 @@ BEGIN
     RAISE NOTICE 'PASS 8 audit row old_row cannot be changed';
 END $$;
 ROLLBACK;
-
-
--- 9. trg_audit_log_immutable: deleting a user with audit history works; the FK
---    sets changed_by to NULL and leaves old_row and new_row untouched.
 BEGIN;
 DO $$
 DECLARE
@@ -194,8 +152,6 @@ BEGIN
     WHERE loadout_id = 'e0000000-0000-0000-0000-000000000001';
     SELECT * INTO before FROM audit_log ORDER BY audit_id DESC LIMIT 1;
     ASSERT before.table_name = 'loadouts' AND before.changed_by = u, 'audit row for the change is missing';
-
-    -- Act as the admin, so the delete's own audit rows do not point at the deleted user.
     PERFORM set_config('app.user_id', 'b0000000-0000-0000-0000-000000000003', true);
     DELETE FROM users WHERE user_id = u;
     ASSERT NOT EXISTS (SELECT 1 FROM users WHERE user_id = u), 'user was not deleted';

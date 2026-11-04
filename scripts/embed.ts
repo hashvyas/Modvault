@@ -3,14 +3,11 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import pg from 'pg';
 import { env, pipeline } from '@huggingface/transformers';
-// Same cache dir as web/lib/embed.ts, so CI can cache the model outside node_modules.
 if (process.env.TRANSFORMERS_CACHE) env.cacheDir = process.env.TRANSFORMERS_CACHE;
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const repoRoot = path.resolve(__dirname, '..');
-
-// Load .env from repo root
 dotenv.config({ path: path.join(repoRoot, '.env') });
 
 const { Pool } = pg;
@@ -71,7 +68,6 @@ async function main() {
     try {
       await client.query('ROLLBACK');
     } catch {
-      // ignore rollback errors
     }
     console.error('Error during embedding generation:', err);
     process.exit(1);

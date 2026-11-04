@@ -4,8 +4,6 @@ import { getSession } from '@/lib/session';
 import { logoutAction } from '@/app/actions/auth';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-
-// Every nav item shares this height and text size so they sit on one baseline.
 const navLink =
   'inline-flex h-8 items-center text-sm font-medium text-muted-foreground hover:text-foreground transition-colors';
 

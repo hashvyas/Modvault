@@ -11,13 +11,10 @@ export async function middleware(req: NextRequest) {
   try {
     secretKey = getJwtSecretKey();
   } catch (err) {
-    // Fail closed without throwing: every route except /login itself goes to /login.
     console.error(err);
     if (pathname === '/login') return NextResponse.next();
     return NextResponse.redirect(new URL('/login', req.url));
   }
-
-  // Static files and internal Next.js assets are skipped via config.matcher
   const token = req.cookies.get(SESSION_COOKIE_NAME)?.value;
 
   let session: { sub: string; username: string; role: string } | null = null;
@@ -34,8 +31,6 @@ export async function middleware(req: NextRequest) {
 
   const role = session?.role || 'anonymous';
   const isAuthenticated = !!session;
-
-  // 1. Admin only paths: /admin and /admin/**
   if (pathname.startsWith('/admin')) {
     if (!isAuthenticated) {
       const loginUrl = new URL('/login', req.url);
@@ -47,8 +42,6 @@ export async function middleware(req: NextRequest) {
     }
     return NextResponse.next();
   }
-
-  // 2. Curator and Admin paths: /curate and /curate/**
   if (pathname.startsWith('/curate')) {
     if (!isAuthenticated) {
       const loginUrl = new URL('/login', req.url);
@@ -60,8 +53,6 @@ export async function middleware(req: NextRequest) {
     }
     return NextResponse.next();
   }
-
-  // 3. Modder, Curator, Admin paths: /loadouts, /loadouts/new, /mods/new
   const isProtectedModderPath =
     pathname === '/loadouts' ||
     pathname === '/loadouts/new' ||
@@ -78,8 +69,6 @@ export async function middleware(req: NextRequest) {
     }
     return NextResponse.next();
   }
-
-  // 4. Public paths: /, /search, /games/**, /mods/** (except /mods/new), /loadouts/:id (checked in page component)
   return NextResponse.next();
 }
 

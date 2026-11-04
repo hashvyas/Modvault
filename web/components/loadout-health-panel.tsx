@@ -92,7 +92,7 @@ export function LoadoutHealthPanel({
 
   return (
     <div className="space-y-6">
-      {/* Health Score Card */}
+      {}
       <div className="p-5 rounded-2xl border border-border bg-card/50 space-y-4">
         <div className="flex items-center justify-between">
           <div>
@@ -104,7 +104,7 @@ export function LoadoutHealthPanel({
           </Badge>
         </div>
 
-        {/* Score Ring Display */}
+        {}
         <div className="flex items-center gap-4 pt-1">
           <ScoreMeter score={health.score} status={health.status} size={72} />
           <div className="space-y-1 text-xs">
@@ -128,7 +128,7 @@ export function LoadoutHealthPanel({
           </div>
         )}
 
-        {/* Global Action Buttons */}
+        {}
         <div className="flex flex-wrap gap-2 pt-2 border-t border-border/50">
           {isOwner && (
             <Button
@@ -162,9 +162,9 @@ export function LoadoutHealthPanel({
         </div>
       </div>
 
-      {/* Issues Diagnostic List */}
+      {}
       <div className="space-y-4">
-        {/* 1. Errors */}
+        {}
         {errors.length > 0 && (
           <div className="space-y-2">
             <h4 className="text-xs font-bold uppercase tracking-wider text-destructive flex items-center gap-1.5">
@@ -199,7 +199,7 @@ export function LoadoutHealthPanel({
           </div>
         )}
 
-        {/* 2. Warnings */}
+        {}
         {warnings.length > 0 && (
           <div className="space-y-2">
             <h4 className="text-xs font-bold uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
@@ -234,7 +234,7 @@ export function LoadoutHealthPanel({
           </div>
         )}
 
-        {/* 3. Info (Collapsed by default per spec) */}
+        {}
         {infos.length > 0 && (
           <div className="border border-border/60 rounded-xl overflow-hidden bg-card/25">
             <button

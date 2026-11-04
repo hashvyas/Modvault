@@ -54,7 +54,6 @@ export async function upsertCompatibilityAction(
   try {
     await withUser(session, async (client) => {
       let detail: unknown = detailObj;
-      // Empty reason and files keep the stored detail, so a re-save never wipes it to {}.
       if (Object.keys(detailObj).length === 0) {
         const existing = await client.query<{ conflict_detail: unknown }>(
           `SELECT conflict_detail FROM compatibility_matrix

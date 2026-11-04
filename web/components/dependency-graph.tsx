@@ -30,8 +30,6 @@ export function DependencyGraph({ dependencies }: Props) {
     if (!dependencies || dependencies.length === 0) {
       return { nodes: [], edges: [] };
     }
-
-    // Group items by depth for hierarchical layout
     const depthGroups: Record<number, DependencyNodeData[]> = {};
     for (const item of dependencies) {
       const d = item.depth ?? 0;
@@ -86,8 +84,6 @@ export function DependencyGraph({ dependencies }: Props) {
               },
             });
           }
-
-          // Build edge from parent if exists
           if (item.parent_version_id) {
             const edgeId = `e-${item.parent_version_id}-${item.version_id}`;
             const depType = item.dep_type ?? 'required';

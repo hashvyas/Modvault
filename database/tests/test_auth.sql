@@ -1,19 +1,6 @@
--- =============================================================================
--- ModVault: A Mod Repository and Compatibility Intelligence System
--- Auth and semver tests  --  tests/test_auth.sql
---
--- Each check runs inside BEGIN ... ROLLBACK and leaves no data behind.
--- A failed ASSERT stops the run (ON_ERROR_STOP=1). Each passing check prints
--- a NOTICE starting with PASS.
---
--- HOW TO RUN (after run_all.sql and tests/fixtures.sql)
---   psql "postgresql://modvault_owner:modvault_owner_dev@localhost:5432/modvault" -v ON_ERROR_STOP=1 -f database/tests/test_auth.sql
--- =============================================================================
+
 
 SET client_encoding = 'UTF8';
-
-
--- 1. fn_register_user then fn_authenticate returns the new user as a modder.
 BEGIN;
 DO $$
 DECLARE
@@ -28,9 +15,6 @@ BEGIN
     RAISE NOTICE 'PASS 1 register then authenticate';
 END $$;
 ROLLBACK;
-
-
--- 2. Wrong password, unknown user and inactive user return zero rows.
 BEGIN;
 DO $$
 BEGIN
@@ -43,9 +27,6 @@ BEGIN
     RAISE NOTICE 'PASS 2 failed logins return zero rows';
 END $$;
 ROLLBACK;
-
-
--- 3. Duplicate username or email raises DUPLICATE.
 BEGIN;
 DO $$
 DECLARE
@@ -67,9 +48,6 @@ BEGIN
     RAISE NOTICE 'PASS 3 duplicate raises DUPLICATE';
 END $$;
 ROLLBACK;
-
-
--- 4. Bad username, email or password raises INVALID_INPUT.
 BEGIN;
 DO $$
 DECLARE
@@ -77,10 +55,10 @@ DECLARE
     raised boolean;
 BEGIN
     FOR c IN SELECT * FROM (VALUES
-        ('ab',           'fx_ok@example.com', 'correct-horse'),   -- username too short
-        ('bad name',     'fx_ok@example.com', 'correct-horse'),   -- space in username
-        ('fx_ok',        'no-at-sign',        'correct-horse'),   -- email without @
-        ('fx_ok',        'fx_ok@example.com', 'short'),           -- password under 8
+        ('ab',           'fx_ok@example.com', 'correct-horse'),
+        ('bad name',     'fx_ok@example.com', 'correct-horse'),
+        ('fx_ok',        'no-at-sign',        'correct-horse'),
+        ('fx_ok',        'fx_ok@example.com', 'short'),
         (NULL,           'fx_ok@example.com', 'correct-horse')
     ) AS t(username, email, password)
     LOOP
@@ -95,18 +73,15 @@ BEGIN
     RAISE NOTICE 'PASS 4 invalid input raises INVALID_INPUT';
 END $$;
 ROLLBACK;
-
-
--- 5. fn_semver_satisfies: operator and parsing cases.
 DO $$
 DECLARE
     c record;
     n int := 0;
 BEGIN
     FOR c IN SELECT * FROM (VALUES
-        ('1.10.0',  '>=1.9',   true),    -- numeric, not string, compare
-        ('2.0.0',   '^1.0',    false),   -- caret keeps the major
-        ('v1.2',    '=1.2.0',  true),    -- leading v and padding
+        ('1.10.0',  '>=1.9',   true),
+        ('2.0.0',   '^1.0',    false),
+        ('v1.2',    '=1.2.0',  true),
         ('1.5.0',   '^1.2',    true),
         ('1.1.0',   '^1.2',    false),
         ('1.2.3',   '>1.2.3',  false),
@@ -114,14 +89,14 @@ BEGIN
         ('1.2.3',   '<=1.2.3', true),
         ('1.2.3',   '<1.2.3',  false),
         ('1.2.2',   '<1.2.3',  true),
-        ('2.2.6',   '2.2',     true),    -- plain x means >=x
+        ('2.2.6',   '2.2',     true),
         ('2.1.0',   '2.2',     false),
         ('1.2.3',   '*',       true),
         ('1.2.3',   NULL,      true),
         ('1.2.3',   '',        true),
-        ('abc',     '>=1.0',   true),    -- unparseable installed version
-        ('1.2.0.1', '=1.2.0',  false),   -- fourth part counts
-        ('0.6.23',  '>= 0.6',  true)     -- space after operator
+        ('abc',     '>=1.0',   true),
+        ('1.2.0.1', '=1.2.0',  false),
+        ('0.6.23',  '>= 0.6',  true)
     ) AS t(installed, cons, expected)
     LOOP
         ASSERT fn_semver_satisfies(c.installed, c.cons) = c.expected,

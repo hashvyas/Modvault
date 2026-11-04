@@ -68,7 +68,6 @@ export default async function LoadoutBuilderPage({ params, searchParams }: Props
 
   try {
     const data = await withUser(session, async (client) => {
-      // 1. Fetch loadout details
       const lRes = await client.query<LoadoutDetail>(
         `SELECT l.loadout_id, l.name, l.description, l.game_version, l.is_public, l.user_id,
                 u.username AS owner_username, g.game_id, g.name AS game_name, g.domain AS game_domain
@@ -81,8 +80,6 @@ export default async function LoadoutBuilderPage({ params, searchParams }: Props
 
       if (lRes.rows.length === 0) return null;
       const lData = lRes.rows[0];
-
-      // 2. Fetch loadout mods in position order
       const modsRes = await client.query<RawModRow>(
         `SELECT lm.id, lm.version_id, lm.position, lm.enabled,
                 m.mod_id, m.name AS mod_name, v.semver AS current_semver
@@ -93,8 +90,6 @@ export default async function LoadoutBuilderPage({ params, searchParams }: Props
          ORDER BY lm.position ASC, lm.id ASC`,
         [id]
       );
-
-      // 3. Fetch all available versions for these mods
       const modIds = Array.from(new Set(modsRes.rows.map((r) => r.mod_id)));
       const versionMap: Record<string, ModVersionOption[]> = {};
       if (modIds.length > 0) {
@@ -130,16 +125,12 @@ export default async function LoadoutBuilderPage({ params, searchParams }: Props
         enabled: r.enabled,
         available_versions: versionMap[r.mod_id] || [],
       }));
-
-      // 4. Fetch Health status from loadout_health_view
       const hRes = await client.query<HealthSummary>(
         `SELECT score, status, error_count, warning_count, info_count
          FROM loadout_health_view
          WHERE loadout_id = $1`,
         [id]
       );
-
-      // 5. Fetch Diagnostic Issues via fn_check_loadout_compatibility
       const issuesRes = await client.query<HealthIssueItem>(
         `SELECT c.issue_type, c.severity, c.version_id, c.other_version_id, c.related_mod_id,
                 c.message, m.name AS related_mod_name
@@ -150,8 +141,6 @@ export default async function LoadoutBuilderPage({ params, searchParams }: Props
            c.issue_type, c.message`,
         [id]
       );
-
-      // 6. Fetch Export Manifest JSON via fn_export_loadout
       const exportRes = await client.query<{ manifest: unknown }>(
         'SELECT fn_export_loadout($1) AS manifest',
         [id]
@@ -189,7 +178,7 @@ export default async function LoadoutBuilderPage({ params, searchParams }: Props
 
   return (
     <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-      {/* Import Notification Banner */}
+      {}
       {isImported && (
         <div className="p-4 rounded-xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 text-sm flex items-center justify-between">
           <span>
@@ -202,7 +191,7 @@ export default async function LoadoutBuilderPage({ params, searchParams }: Props
         </div>
       )}
 
-      {/* Header Banner */}
+      {}
       <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4 border-b border-border pb-6">
         <div className="space-y-1">
           <Link
@@ -258,9 +247,9 @@ export default async function LoadoutBuilderPage({ params, searchParams }: Props
         </div>
       </div>
 
-      {/* Two Panes Layout */}
+      {}
       <div className="grid gap-8 lg:grid-cols-12">
-        {/* Left Pane (7 cols): Sortable DND Mod List */}
+        {}
         <div className="lg:col-span-7">
           <LoadoutModList
             loadoutId={loadout.loadout_id}
@@ -269,7 +258,7 @@ export default async function LoadoutBuilderPage({ params, searchParams }: Props
           />
         </div>
 
-        {/* Right Pane (5 cols): Diagnostic Health Panel */}
+        {}
         <div className="lg:col-span-5">
           <LoadoutHealthPanel
             loadoutId={loadout.loadout_id}

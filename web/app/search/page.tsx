@@ -51,8 +51,6 @@ export default async function SearchPage({ searchParams }: Props) {
   const params = await searchParams;
   const q = (params.q ?? '').trim();
   const gameFilterParam = (params.game ?? '').trim();
-
-  // Normalize tag parameter to an array of slugs
   let selectedTags: string[] = [];
   if (params.tag) {
     if (Array.isArray(params.tag)) {
@@ -69,15 +67,12 @@ export default async function SearchPage({ searchParams }: Props) {
   let activeGameId: string | null = null;
 
   try {
-    // Start embedding now so it overlaps with the filter queries below.
     const embeddingPromise = q
       ? embed(q).then(toPgVector).catch((embErr) => {
           console.error('Embedding generation failed, falling back to keyword search:', embErr);
           return null;
         })
       : Promise.resolve(null);
-
-    // 1. Load games and tags for filters
     const filterData = await withUser(session, async (client) => {
       const gRes = await client.query<GameFilter>(
         'SELECT game_id, name, domain FROM games ORDER BY name'
@@ -94,8 +89,6 @@ export default async function SearchPage({ searchParams }: Props) {
 
     games = filterData.games;
     availableTags = filterData.tags;
-
-    // Resolve game filter to UUID if set
     if (gameFilterParam) {
       const found = games.find(
         (g) => g.domain === gameFilterParam || g.game_id === gameFilterParam
@@ -104,12 +97,9 @@ export default async function SearchPage({ searchParams }: Props) {
         activeGameId = found.game_id;
       }
     }
-
-    // 2. Perform search or browse
     const tagArrayArg = selectedTags.length > 0 ? selectedTags : null;
 
     if (q) {
-      // Compute vector embedding for query text
       const pgEmbedding = await embeddingPromise;
 
       results = await withUser(session, async (client) => {
@@ -135,7 +125,6 @@ export default async function SearchPage({ searchParams }: Props) {
         return res.rows;
       });
     } else if (tagArrayArg) {
-      // Tag-only search
       results = await withUser(session, async (client) => {
         const queryText = `
           SELECT m.mod_id, m.name, m.summary, m.game_id,
@@ -154,7 +143,6 @@ export default async function SearchPage({ searchParams }: Props) {
         return res.rows;
       });
     } else {
-      // Default: show catalog sorted by popularity
       results = await withUser(session, async (client) => {
         const queryText = `
           SELECT m.mod_id, m.name, m.summary, m.game_id,
@@ -177,7 +165,7 @@ export default async function SearchPage({ searchParams }: Props) {
 
   return (
     <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-      {/* Header and Search Form */}
+      {}
       <div className="space-y-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Hybrid Mod Discovery</h1>
@@ -208,7 +196,7 @@ export default async function SearchPage({ searchParams }: Props) {
             ))}
           </select>
 
-          {/* Preserve tag filter on search submission */}
+          {}
           {selectedTags.map((t) => (
             <input key={t} type="hidden" name="tag" value={t} />
           ))}
@@ -217,7 +205,7 @@ export default async function SearchPage({ searchParams }: Props) {
         </form>
       </div>
 
-      {/* Tag Filter Pills */}
+      {}
       <div className="space-y-2">
         <div className="flex items-center justify-between">
           <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
@@ -232,7 +220,6 @@ export default async function SearchPage({ searchParams }: Props) {
         <div className="flex flex-wrap gap-2">
           {availableTags.map((tag) => {
             const isSelected = selectedTags.includes(tag.slug);
-            // Toggle tag URL
             let newTags: string[];
             if (isSelected) {
               newTags = selectedTags.filter((t) => t !== tag.slug);
@@ -264,14 +251,14 @@ export default async function SearchPage({ searchParams }: Props) {
         </div>
       </div>
 
-      {/* Error Display */}
+      {}
       {errorMsg && (
         <div className="p-4 rounded-lg bg-destructive/10 border border-destructive/30 text-destructive text-sm">
           Failed to perform search: {errorMsg}
         </div>
       )}
 
-      {/* Results Header */}
+      {}
       <div className="flex items-center justify-between border-b border-border pb-3">
         <span className="text-sm text-muted-foreground">
           Found <strong className="text-foreground">{results.length}</strong> {results.length === 1 ? 'mod' : 'mods'}
@@ -283,7 +270,7 @@ export default async function SearchPage({ searchParams }: Props) {
         </span>
       </div>
 
-      {/* Results Grid */}
+      {}
       {results.length === 0 ? (
         <div className="text-center py-16 space-y-4 border border-dashed border-border rounded-xl">
           <p className="text-lg font-medium text-muted-foreground">No mods matched your query.</p>
@@ -303,7 +290,7 @@ export default async function SearchPage({ searchParams }: Props) {
               <Card className="h-full flex flex-col justify-between bg-card/50 hover:bg-card/80 border-border transition-all hover:border-cyan-500/40">
                 <CardContent className="p-5 space-y-3 flex-1 flex flex-col justify-between">
                   <div className="space-y-2">
-                    {/* Ranking & Match Badges */}
+                    {}
                     <div className="flex flex-wrap items-center gap-1.5">
                       {mod.semantic_rank != null && (
                         <Badge variant="meaning" className="text-[11px]">

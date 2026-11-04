@@ -42,12 +42,9 @@ export default async function AdminDashboardPage({ searchParams }: Props) {
 
   try {
     const data = await withUser(session, async (client) => {
-      // 1. Fetch distinct audit tables
       const tRes = await client.query<{ table_name: string }>(
         'SELECT DISTINCT table_name FROM audit_log ORDER BY table_name ASC'
       );
-
-      // 2. Build filtered audit log query
       const conditions: string[] = ['1=1'];
       const queryParams: unknown[] = [];
 
@@ -77,8 +74,6 @@ export default async function AdminDashboardPage({ searchParams }: Props) {
       }
 
       const whereClause = conditions.join(' AND ');
-
-      // Total count
       const countRes = await client.query<{ count: string }>(
         `SELECT count(*)::text AS count
          FROM audit_log a
@@ -87,8 +82,6 @@ export default async function AdminDashboardPage({ searchParams }: Props) {
         queryParams
       );
       const total = parseInt(countRes.rows[0]?.count ?? '0', 10);
-
-      // Paginated logs
       queryParams.push(PAGE_SIZE);
       const limitIdx = queryParams.length;
       queryParams.push(offset);
@@ -105,8 +98,6 @@ export default async function AdminDashboardPage({ searchParams }: Props) {
          LIMIT $${limitIdx} OFFSET $${offsetIdx}`,
         queryParams
       );
-
-      // 3. Fetch all registered users
       const usersRes = await client.query<UserItem>(
         `SELECT user_id, username, email, role, is_active, created_at::text
          FROM users
@@ -131,7 +122,7 @@ export default async function AdminDashboardPage({ searchParams }: Props) {
 
   return (
     <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-10">
-      {/* Admin Header */}
+      {}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-border pb-6">
         <div>
           <div className="flex items-center gap-3">
@@ -145,11 +136,11 @@ export default async function AdminDashboardPage({ searchParams }: Props) {
           </p>
         </div>
 
-        {/* Refresh Reports Action Button */}
+        {}
         <RefreshReportsButton />
       </div>
 
-      {/* User Role Management Section */}
+      {}
       <section className="space-y-4">
         <div>
           <h2 className="text-xl font-bold tracking-tight">User Role Management</h2>
@@ -160,7 +151,7 @@ export default async function AdminDashboardPage({ searchParams }: Props) {
         <AdminUsersTable users={users} />
       </section>
 
-      {/* Audit Log Table Section */}
+      {}
       <section className="space-y-4 pt-4 border-t border-border">
         <div>
           <h2 className="text-xl font-bold tracking-tight">Audit Trail Ledger</h2>

@@ -11,11 +11,8 @@ export interface SessionPayload {
 }
 
 export const SESSION_COOKIE_NAME = 'modvault_session';
-const SESSION_EXPIRY_SECONDS = 7 * 24 * 60 * 60; // 7 days
+const SESSION_EXPIRY_SECONDS = 7 * 24 * 60 * 60;
 
-/**
- * Sign a JWT token with sub, username, and role using HS256 algorithm.
- */
 export async function createSessionToken(payload: {
   sub: string;
   username: string;
@@ -32,11 +29,7 @@ export async function createSessionToken(payload: {
     .sign(getJwtSecretKey());
 }
 
-/**
- * Verify and decode a session token. Returns null if invalid or expired.
- */
 export async function verifySessionToken(token: string): Promise<SessionPayload | null> {
-  // Outside the try: a missing secret is a config error, not an invalid token.
   const key = getJwtSecretKey();
   try {
     const { payload } = await jwtVerify(token, key, {
@@ -48,9 +41,6 @@ export async function verifySessionToken(token: string): Promise<SessionPayload 
   }
 }
 
-/**
- * Read the current session from incoming request cookies in Server Components or Actions.
- */
 export async function getSession(): Promise<SessionPayload | null> {
   const cookieStore = await cookies();
   const token = cookieStore.get(SESSION_COOKIE_NAME)?.value;
@@ -58,9 +48,6 @@ export async function getSession(): Promise<SessionPayload | null> {
   return verifySessionToken(token);
 }
 
-/**
- * Set the session cookie with httpOnly, lax sameSite, and 7 days expiration.
- */
 export async function setSessionCookie(token: string): Promise<void> {
   const cookieStore = await cookies();
   cookieStore.set(SESSION_COOKIE_NAME, token, {
@@ -72,9 +59,6 @@ export async function setSessionCookie(token: string): Promise<void> {
   });
 }
 
-/**
- * Clear the session cookie to log out.
- */
 export async function deleteSession(): Promise<void> {
   const cookieStore = await cookies();
   cookieStore.delete(SESSION_COOKIE_NAME);

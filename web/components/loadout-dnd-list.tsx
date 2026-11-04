@@ -92,7 +92,7 @@ function SortableModRow({
       } ${isDragging ? 'border-cyan-500 shadow-xl z-10' : ''}`}
     >
       <div className="flex items-center gap-3 overflow-hidden flex-1">
-        {/* Drag handle */}
+        {}
         {isOwner && (
           <button
             type="button"
@@ -105,12 +105,12 @@ function SortableModRow({
           </button>
         )}
 
-        {/* Position badge */}
+        {}
         <span className="w-6 text-center text-xs font-mono font-bold text-muted-foreground shrink-0">
           #{index + 1}
         </span>
 
-        {/* Mod Info */}
+        {}
         <div className="flex flex-col min-w-0">
           <Link
             href={`/mods/${item.mod_id}`}
@@ -128,7 +128,7 @@ function SortableModRow({
         </div>
       </div>
 
-      {/* Version selector, Enabled toggle, and Remove button */}
+      {}
       <div className="flex items-center gap-2 shrink-0">
         {isOwner && item.available_versions.length > 1 ? (
           <select
@@ -178,7 +178,6 @@ function SortableModRow({
 
 export function LoadoutModList({ loadoutId, initialMods, isOwner }: Props) {
   const [mods, setMods] = useState<LoadoutModItem[]>(initialMods);
-  // Resync when the server re-renders with fresh data (auto-sort, add mod, etc.)
   const [prevInitialMods, setPrevInitialMods] = useState(initialMods);
   if (initialMods !== prevInitialMods) {
     setPrevInitialMods(initialMods);

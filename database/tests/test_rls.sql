@@ -1,25 +1,6 @@
--- =============================================================================
--- ModVault: A Mod Repository and Compatibility Intelligence System
--- Row-Level Security tests  --  tests/test_rls.sql
---
--- Runs as the web app role (SET LOCAL ROLE modvault_app) with the session
--- context the app sets, and checks what each user can see and write.
---
--- Each check runs inside BEGIN ... ROLLBACK and leaves no data behind.
--- A failed ASSERT stops the run (ON_ERROR_STOP=1). Each passing check prints
--- a NOTICE starting with PASS.
---
--- Fixture rows used: b..01 fx_modder (user A), b..02 fx_curator (user B),
--- b..03 fx_admin, e..01 A's private loadout, e..02 admin's public loadout.
---
--- HOW TO RUN (after run_all.sql and tests/fixtures.sql)
---   psql "postgresql://modvault_owner:modvault_owner_dev@localhost:5432/modvault" -v ON_ERROR_STOP=1 -f database/tests/test_rls.sql
--- =============================================================================
+
 
 SET client_encoding = 'UTF8';
-
-
--- 1. User A cannot see user B's private loadout, its rows or its health.
 BEGIN;
 INSERT INTO loadouts (loadout_id, user_id, game_id, name)
 VALUES ('e0000000-0000-0000-0000-0000000000b1', 'b0000000-0000-0000-0000-000000000002',
@@ -44,12 +25,8 @@ BEGIN
         'A cannot see own loadout';
     ASSERT (SELECT count(*) FROM loadouts WHERE loadout_id = 'e0000000-0000-0000-0000-000000000002') = 1,
         'A cannot see a public loadout';
-
-    -- Writes to a loadout A does not own touch nothing.
     UPDATE loadouts SET name = 'hijack' WHERE loadout_id = 'e0000000-0000-0000-0000-000000000002';
     ASSERT NOT FOUND, 'A renamed a public loadout of another user';
-
-    -- The other direction: user B (a curator, not an admin) cannot see A's private loadout e..01.
     PERFORM set_config('app.user_id', 'b0000000-0000-0000-0000-000000000002', true);
     PERFORM set_config('app.role', 'curator', true);
     ASSERT (SELECT count(*) FROM loadouts WHERE loadout_id = 'e0000000-0000-0000-0000-000000000001') = 0,
@@ -64,9 +41,6 @@ BEGIN
     RAISE NOTICE 'PASS 1 private loadouts are hidden in both directions, tables and views';
 END $$;
 ROLLBACK;
-
-
--- 2. An admin sees every loadout.
 BEGIN;
 INSERT INTO loadouts (loadout_id, user_id, game_id, name)
 VALUES ('e0000000-0000-0000-0000-0000000000b1', 'b0000000-0000-0000-0000-000000000002',
@@ -81,9 +55,6 @@ BEGIN
     RAISE NOTICE 'PASS 2 admin sees private loadouts';
 END $$;
 ROLLBACK;
-
-
--- 3. password_hash is not readable; the other user columns are.
 BEGIN;
 SET LOCAL ROLE modvault_app;
 DO $$
@@ -99,9 +70,6 @@ BEGIN
     RAISE NOTICE 'PASS 3 password_hash is not readable';
 END $$;
 ROLLBACK;
-
-
--- 4. A modder cannot write compatibility_matrix or mod_dependencies; a curator can.
 BEGIN;
 SET LOCAL ROLE modvault_app;
 DO $$
@@ -135,9 +103,6 @@ BEGIN
     RAISE NOTICE 'PASS 4 compatibility writes need curator or admin';
 END $$;
 ROLLBACK;
-
-
--- 5. Reviews: everyone reads, only the author writes.
 BEGIN;
 SET LOCAL ROLE modvault_app;
 DO $$
@@ -159,9 +124,6 @@ BEGIN
     RAISE NOTICE 'PASS 5 reviews belong to their author';
 END $$;
 ROLLBACK;
-
-
--- 6. audit_log: admins read it, modders see nothing, nobody writes it.
 BEGIN;
 SET LOCAL ROLE modvault_app;
 DO $$
@@ -180,9 +142,6 @@ BEGIN
     RAISE NOTICE 'PASS 6 audit_log is admin read-only';
 END $$;
 ROLLBACK;
-
-
--- 7. The app role can run the main procedures on its own data.
 BEGIN;
 SET LOCAL ROLE modvault_app;
 DO $$
@@ -202,7 +161,6 @@ BEGIN
     ASSERT fn_loadout_health_score(l) BETWEEN 0 AND 100, 'health score failed under app role';
     CALL pr_publish_mod('a0000000-0000-0000-0000-000000000001', 'FX App Mod', 's', 'c', '1.0.0',
                         ARRAY['fx-app-tag'], NULL, m);
-    -- Promotion is for curators and admins.
     PERFORM set_config('app.user_id', 'b0000000-0000-0000-0000-000000000002', true);
     PERFORM set_config('app.role', 'curator', true);
     SELECT version_id INTO v FROM mod_versions WHERE mod_id = m;
@@ -210,10 +168,6 @@ BEGIN
     RAISE NOTICE 'PASS 7 procedures work under the app role';
 END $$;
 ROLLBACK;
-
-
--- 8. SECURITY DEFINER routines: no EXECUTE for PUBLIC, EXECUTE for the app role,
---    and their triggers still fire for the app role (rating rollup and audit).
 BEGIN;
 DO $$
 DECLARE
@@ -245,8 +199,6 @@ BEGIN
     SET LOCAL ROLE modvault_owner;
     SELECT count(*) INTO audits_before FROM audit_log;
     SET LOCAL ROLE modvault_app;
-
-    -- trg_reviews_rating_rollup and trg_audit_reviews are SECURITY DEFINER trigger functions.
     DELETE FROM reviews WHERE user_id = 'b0000000-0000-0000-0000-000000000001'
                           AND mod_id = 'c0000000-0000-0000-0000-000000000002';
     INSERT INTO reviews (user_id, mod_id, rating) VALUES

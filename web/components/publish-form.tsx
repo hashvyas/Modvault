@@ -30,7 +30,7 @@ export function PublishForm({ games }: Props) {
         </div>
       )}
 
-      {/* Game Selection */}
+      {}
       <div className="space-y-2">
         <Label htmlFor="game_id">Target Game *</Label>
         <select
@@ -48,7 +48,7 @@ export function PublishForm({ games }: Props) {
         </select>
       </div>
 
-      {/* Mod Name & Semver */}
+      {}
       <div className="grid gap-4 sm:grid-cols-3">
         <div className="sm:col-span-2 space-y-2">
           <Label htmlFor="name">Mod Name *</Label>
@@ -74,7 +74,7 @@ export function PublishForm({ games }: Props) {
         </div>
       </div>
 
-      {/* Category and Tags */}
+      {}
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
           <Label htmlFor="category">Category</Label>
@@ -97,7 +97,7 @@ export function PublishForm({ games }: Props) {
         </div>
       </div>
 
-      {/* Summary */}
+      {}
       <div className="space-y-2">
         <Label htmlFor="summary">Mod Summary & Description</Label>
         <textarea

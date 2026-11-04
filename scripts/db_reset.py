@@ -20,11 +20,9 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 DATABASE_DIR = REPO_ROOT / "database"
 WINDOWS_PG_BIN = Path(r"C:\Program Files\PostgreSQL\18\bin")
 
-
 def fail(message):
     print(f"db_reset: {message}", file=sys.stderr)
     sys.exit(1)
-
 
 def read_setting(name):
     value = os.environ.get(name, "").strip()
@@ -40,7 +38,6 @@ def read_setting(name):
                     return value
     fail(f"{name} is not set. Add it to .env in the repo root, or set the environment variable.")
 
-
 def find_tool(name):
     found = shutil.which(name)
     if found:
@@ -50,13 +47,11 @@ def find_tool(name):
             return str(candidate)
     fail(f"{name} not found on PATH or in {WINDOWS_PG_BIN}.")
 
-
 def run(args, env, what):
     print(f"db_reset: {what}", flush=True)
     result = subprocess.run(args, env=env)
     if result.returncode != 0:
         fail(f"{what} failed with exit code {result.returncode}.")
-
 
 def main():
     parser = argparse.ArgumentParser(description="Drop and rebuild the ModVault database.")
@@ -67,7 +62,6 @@ def main():
     psql = find_tool("psql")
     pg_isready = find_tool("pg_isready")
 
-    # seed.sql reads the admin and curator passwords with \getenv.
     env = dict(
         os.environ,
         PGCLIENTENCODING="UTF8",
@@ -87,7 +81,6 @@ def main():
         run(psql_base + ["-f", str(tests)], env, "running database/tests/run_tests.sql")
 
     print("db_reset: done")
-
 
 if __name__ == "__main__":
     main()

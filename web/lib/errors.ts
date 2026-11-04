@@ -5,9 +5,6 @@ export interface AppError {
 
 const MODVAULT_ERROR_REGEX = /^MODVAULT:([A-Z_]+): (.*)$/;
 
-/**
- * Parses PostgreSQL errors matching the MODVAULT:<CODE>: <message> convention.
- */
 export function parseModvaultError(error: unknown): AppError | null {
   if (!error) return null;
   const message =
@@ -27,10 +24,6 @@ export function parseModvaultError(error: unknown): AppError | null {
 
 export const GENERIC_ERROR_MESSAGE = 'Something went wrong. Please try again.';
 
-/**
- * Returns text that is safe to show in the browser: the human text of a MODVAULT error,
- * otherwise a generic message. Non-MODVAULT errors (raw Postgres text, stacks) are only logged.
- */
 export function formatErrorMessage(error: unknown): string {
   const parsed = parseModvaultError(error);
   if (parsed) {

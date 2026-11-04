@@ -26,10 +26,6 @@ interface LoadoutOption {
   game_version: string | null;
   current_version_id: string | null;
 }
-
-// ---------------------------------------------------------------------------
-// 1. Versions Table Component
-// ---------------------------------------------------------------------------
 export function VersionTable({
   versions,
   modId,
@@ -117,10 +113,6 @@ export function VersionTable({
     </div>
   );
 }
-
-// ---------------------------------------------------------------------------
-// 2. Add To Loadout Component
-// ---------------------------------------------------------------------------
 export function AddToLoadoutPicker({
   modId,
   versions,
@@ -140,8 +132,6 @@ export function AddToLoadoutPicker({
   const primaryVer = versions.find((v) => v.is_primary) ?? versions[0];
   const [selectedId, setSelectedId] = React.useState(loadouts[0]?.loadout_id);
   const [selectedVersionId, setSelectedVersionId] = React.useState(primaryVer?.version_id);
-
-  // Sync selected loadout when loadouts prop changes or if selection is missing
   React.useEffect(() => {
     if (!selectedId || !loadouts.some((l) => l.loadout_id === selectedId)) {
       if (loadouts.length > 0) {
@@ -149,8 +139,6 @@ export function AddToLoadoutPicker({
       }
     }
   }, [loadouts, selectedId]);
-
-  // Sync selected version when versions prop changes
   React.useEffect(() => {
     if (!selectedVersionId || !versions.some((v) => v.version_id === selectedVersionId)) {
       if (primaryVer) {
@@ -158,8 +146,6 @@ export function AddToLoadoutPicker({
       }
     }
   }, [versions, primaryVer, selectedVersionId]);
-
-  // Automatically refresh server component data when tab/window regains focus
   React.useEffect(() => {
     const handleFocus = () => {
       router.refresh();

@@ -1,15 +1,4 @@
--- =============================================================================
--- ModVault: A Mod Repository and Compatibility Intelligence System
--- Build order  --  run_all.sql
---
--- PURPOSE
---   Builds the whole database in dependency order. transactions.sql,
---   queries.sql, ddl_demo.sql, seed_expectations.sql and tests/run_tests.sql
---   run after this file, one at a time.
---
--- HOW TO RUN
---   python scripts/db_reset.py      (drops schema public, then runs this file)
--- =============================================================================
+
 
 SET client_encoding = 'UTF8';
 

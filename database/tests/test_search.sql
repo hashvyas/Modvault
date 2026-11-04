@@ -1,23 +1,6 @@
--- =============================================================================
--- ModVault: A Mod Repository and Compatibility Intelligence System
--- Hybrid search tests  --  tests/test_search.sql
---
--- Hand-made 384-dim vectors: e(i) is 1 at dimension i and 0 elsewhere.
--- Game A embeddings set inside the test:
---   SkyUI (c2) = e(1)          Alternate UI (c4) = mostly e(1), a bit of e(2)
---   Unofficial Patch (c3) = e(3)   Script Extender (c1) = e(4)
---
--- Each check runs inside BEGIN ... ROLLBACK and leaves no data behind.
--- A failed ASSERT stops the run (ON_ERROR_STOP=1). Each passing check prints
--- a NOTICE starting with PASS.
---
--- HOW TO RUN (after run_all.sql and tests/fixtures.sql)
---   psql "postgresql://modvault_owner:modvault_owner_dev@localhost:5432/modvault" -v ON_ERROR_STOP=1 -f database/tests/test_search.sql
--- =============================================================================
+
 
 SET client_encoding = 'UTF8';
-
--- Test helper, dropped with the session: weight a at dimension i plus weight b at dimension j.
 CREATE FUNCTION pg_temp.fx_vec(i int, a float8 DEFAULT 1, j int DEFAULT NULL, b float8 DEFAULT 0)
 RETURNS vector LANGUAGE sql IMMUTABLE AS $$
     SELECT ('[' || string_agg(CASE g WHEN i THEN a::text WHEN j THEN b::text ELSE '0' END, ',' ORDER BY g) || ']')::vector(384)
@@ -35,9 +18,6 @@ RETURNS void LANGUAGE sql AS $$
     END
     WHERE game_id IN ('a0000000-0000-0000-0000-000000000001', 'a0000000-0000-0000-0000-000000000002');
 $$;
-
-
--- 1. Keyword-only query: keyword hits only, semantic_rank NULL.
 BEGIN;
 DO $$
 BEGIN
@@ -52,9 +32,6 @@ BEGIN
     RAISE NOTICE 'PASS 1 keyword-only search';
 END $$;
 ROLLBACK;
-
-
--- 2. Vector-only query: semantic hits only, nearest first.
 BEGIN;
 DO $$
 BEGIN
@@ -71,11 +48,6 @@ BEGIN
     RAISE NOTICE 'PASS 2 vector-only search';
 END $$;
 ROLLBACK;
-
-
--- 3. A mod in both lists ranks above a mod in one list.
---    "script extender" hits Script Extender (keyword rank 1, semantic rank 3 or 4);
---    SkyUI is semantic rank 1 only.
 BEGIN;
 DO $$
 DECLARE
@@ -93,9 +65,6 @@ BEGIN
     RAISE NOTICE 'PASS 3 fused rank beats single list';
 END $$;
 ROLLBACK;
-
-
--- 4. Game filter, limit cap and empty input.
 BEGIN;
 DO $$
 BEGIN

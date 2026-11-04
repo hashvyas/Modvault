@@ -33,15 +33,12 @@ export default async function GameCompatibilityPage({ params }: Props) {
 
   try {
     const data = await withUser(session, async (client) => {
-      // 1. Fetch game details
       const gRes = await client.query<GameInfo>(
         'SELECT game_id, name, domain, current_version FROM games WHERE domain = $1',
         [domain]
       );
       if (gRes.rows.length === 0) return null;
       const g = gRes.rows[0];
-
-      // 2. Fetch primary versions for this game
       const vRes = await client.query<PrimaryVersionItem>(
         `SELECT v.version_id, v.semver, m.mod_id, m.name AS mod_name
          FROM mod_versions v
@@ -53,8 +50,6 @@ export default async function GameCompatibilityPage({ params }: Props) {
 
       const verList = vRes.rows;
       const versionIds = verList.map((v) => v.version_id);
-
-      // 3. Fetch compatibility matrix rows
       let matrixCells: HeatmapCellData[] = [];
       if (versionIds.length > 0) {
         const cRes = await client.query<HeatmapCellData>(
@@ -85,7 +80,7 @@ export default async function GameCompatibilityPage({ params }: Props) {
 
   return (
     <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-      {/* Header */}
+      {}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-border pb-6">
         <div className="space-y-1">
           <div className="flex items-center gap-3">
@@ -115,7 +110,7 @@ export default async function GameCompatibilityPage({ params }: Props) {
         </div>
       </div>
 
-      {/* Heatmap Grid */}
+      {}
       <CompatibilityHeatmap
         domain={game.domain}
         gameName={game.name}

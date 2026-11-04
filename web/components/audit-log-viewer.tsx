@@ -43,8 +43,6 @@ export function AuditLogViewer({
 
   const PAGE_SIZE = 50;
   const totalPages = Math.ceil(totalLogs / PAGE_SIZE);
-
-  // Compute keys changed between old_row and new_row
   const getChangedKeys = (oldRow: Record<string, unknown> | null, newRow: Record<string, unknown> | null) => {
     const keys = new Set<string>([
       ...Object.keys(oldRow || {}),
@@ -63,7 +61,7 @@ export function AuditLogViewer({
 
   return (
     <div className="space-y-6">
-      {/* Filters Bar */}
+      {}
       <form
         method="GET"
         className="grid gap-3 sm:grid-cols-2 md:grid-cols-5 p-4 rounded-xl border border-border bg-card/40 text-xs"
@@ -138,7 +136,7 @@ export function AuditLogViewer({
         </div>
       </form>
 
-      {/* Audit Log Results Table */}
+      {}
       <div className="rounded-xl border border-border overflow-hidden bg-card/25">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
@@ -212,7 +210,7 @@ export function AuditLogViewer({
         </div>
       </div>
 
-      {/* Pagination Controls */}
+      {}
       {totalPages > 1 && (
         <div className="flex items-center justify-between text-xs pt-2">
           <span className="text-muted-foreground">
@@ -239,7 +237,7 @@ export function AuditLogViewer({
         </div>
       )}
 
-      {/* Side-by-Side Diff Modal Dialog */}
+      {}
       {activeDiff && (
         <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-card border border-border rounded-2xl p-6 max-w-4xl w-full max-h-[90vh] flex flex-col space-y-4 shadow-2xl">
@@ -265,7 +263,7 @@ export function AuditLogViewer({
               </Button>
             </div>
 
-            {/* Side-by-Side Comparison */}
+            {}
             <div className="overflow-y-auto flex-1 space-y-3">
               {(() => {
                 const { allKeys, changedKeys } = getChangedKeys(activeDiff.old_row, activeDiff.new_row);

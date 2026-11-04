@@ -58,7 +58,6 @@ export default async function LoadoutsDashboardPage() {
 
   try {
     const data = await withUser(session, async (client) => {
-      // 1. Fetch user loadouts
       const loadoutsRes = await client.query<UserLoadoutItem>(
         `SELECT l.loadout_id, l.name, l.description, l.game_version, l.is_public,
                 g.name AS game_name, g.domain AS game_domain,
@@ -71,13 +70,9 @@ export default async function LoadoutsDashboardPage() {
          ORDER BY l.updated_at DESC`,
         [userId]
       );
-
-      // 2. Fetch games for creation form
       const gamesRes = await client.query<GameItem>(
         'SELECT game_id, name, domain, current_version FROM games ORDER BY name ASC'
       );
-
-      // 3. Fetch recent public loadouts
       const pubRes = await client.query<PublicLoadoutItem>(
         `SELECT l.loadout_id, l.name, l.game_version, u.username, g.name AS game_name,
                 lh.score, lh.status,
@@ -108,7 +103,7 @@ export default async function LoadoutsDashboardPage() {
 
   return (
     <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-10">
-      {/* Header */}
+      {}
       <div>
         <h1 className="text-3xl font-extrabold tracking-tight">Loadout Manager</h1>
         <p className="text-muted-foreground text-sm mt-1">
@@ -116,9 +111,9 @@ export default async function LoadoutsDashboardPage() {
         </p>
       </div>
 
-      {/* Main Grid: My Loadouts vs New / Import forms */}
+      {}
       <div className="grid gap-8 lg:grid-cols-3">
-        {/* Left Column (2 cols): My Loadouts */}
+        {}
         <div className="lg:col-span-2 space-y-6">
           <div className="flex items-center justify-between border-b border-border pb-3">
             <h2 className="text-xl font-bold tracking-tight">My Loadouts</h2>
@@ -213,7 +208,7 @@ export default async function LoadoutsDashboardPage() {
             </div>
           )}
 
-          {/* Public Community Loadouts */}
+          {}
           {publicLoadouts.length > 0 && (
             <div className="space-y-4 pt-6 border-t border-border">
               <h3 className="text-lg font-bold tracking-tight">Community Shared Loadouts</h3>
@@ -257,7 +252,7 @@ export default async function LoadoutsDashboardPage() {
           )}
         </div>
 
-        {/* Right Column (1 col): Creation and Import forms */}
+        {}
         <div className="space-y-6">
           <Card className="bg-card/40 border-border">
             <CardHeader className="pb-3">
